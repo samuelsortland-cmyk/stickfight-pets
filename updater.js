@@ -23,8 +23,8 @@ function config() {
   const c = readJson(path.join(ROOT, 'update.json')) || {};
   const repo = c.repo || DEFAULT_REPO, branch = c.branch || 'main';
   // baseUrl lets you self-host updates anywhere (or test against a local server).
-  const base = c.baseUrl ? c.baseUrl.replace(/\/?$/, '/') : `https://raw.githubusercontent.com/${repo}/${branch}/`;
-  return { repo, base };
+  const base = c.baseUrl ? c.baseUrl.replace(/\/?$/, '/') : null;
+  return { repo, branch, base };
 }
 
 function sha256(buf) {
@@ -52,9 +52,22 @@ async function fetchBuf(url) {
   return Buffer.from(await res.arrayBuffer());
 }
 
+/* Resolve the newest commit on the branch so every file is fetched from that exact
+ * commit. raw.githubusercontent.com caches branch URLs for minutes; commit URLs never go stale. */
+async function resolveBase({ repo, branch, base }) {
+  if (base) return base;
+  try {
+    const info = JSON.parse((await fetchBuf(`https://api.github.com/repos/${repo}/commits/${encodeURIComponent(branch)}`)).toString('utf8'));
+    if (info && /^[0-9a-f]{40}$/.test(info.sha)) return `https://raw.githubusercontent.com/${repo}/${info.sha}/`;
+  } catch (e) { /* API unreachable or rate-limited: fall back to the branch */ }
+  return `https://raw.githubusercontent.com/${repo}/${branch}/`;
+}
+
 /* Returns { status: 'latest' | 'updated' | 'error', version, message }. */
 async function checkForUpdates() {
-  const { repo, base } = config();
+  const cfg = config();
+  const { repo } = cfg;
+  const base = await resolveBase(cfg);
   const current = localVersion();
   let manifestBuf;
   try {

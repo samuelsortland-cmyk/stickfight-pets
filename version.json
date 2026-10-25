@@ -1,6 +1,6 @@
 {
-  "version": "2.1.0",
-  "notes": "v2.1: pixel-art restyle, new tool dock, faster and more aggressive fights",
+  "version": "2.1.1",
+  "notes": "Updater fetches from the exact latest commit so new versions arrive immediately",
   "files": [
     {
       "path": "main.js",
@@ -12,11 +12,11 @@
     },
     {
       "path": "updater.js",
-      "sha256": "a1f9cd58426a0f376b299abe450701c0baf32437220fb0f2e13b82b88c25201b"
+      "sha256": "21b8bd5036b3b4c32f842a2e91ec1fe69ac61e07487793644007660c185114e5"
     },
     {
       "path": "package.json",
-      "sha256": "f72a61b498524bcf42a02a8ac65ff3b62a26f498e5bb84882b66489031b3d875"
+      "sha256": "a869f7b68761c270a241d1e030e56ef6905f5aa1c6d35f3b9d319a4f236a255f"
     },
     {
       "path": "README.md",
