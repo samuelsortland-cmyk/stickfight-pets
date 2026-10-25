@@ -83,7 +83,7 @@ const MOVES = {
 Object.assign(MOVES, {
   // Low sliding kick that pops the opponent up for a juggle.
   slide: {
-    s: 7, a: 10, r: 22, dmg: 6, hs: 26, bs: 12, kb: [2, -9], stop: 6, low: true, launch: true, joint: 'f1', rad: 9, slideV: 6.5, ai: 0.4,
+    s: 11, a: 10, r: 22, dmg: 6, hs: 26, bs: 12, kb: [2, -9], stop: 6, low: true, launch: true, joint: 'f1', rad: 9, slideV: 6, ai: 0.3,
     wind: P({ lean: 0.2, a1: 0.6, e1: 1.6, a2: 0.2, e2: 2.0, l1: 0.9, k1: -1.4, l2: -0.2, k2: -0.8 }),
     hit: P({ lean: -1.05, head: 0.5, a1: -1.4, e1: 0.4, a2: -1.7, e2: 0.4, l1: 1.5, k1: 0.0, l2: 0.9, k2: -1.6 }),
     cancels: ['jc'],

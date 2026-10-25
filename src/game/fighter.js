@@ -2,24 +2,32 @@
 /* A stickman fighter: state machine, platformer physics (dash, air dash, wall
  * cling + wall jump, backflip), posing and a verlet ragdoll for knockdowns,
  * throws and being picked up by the cursor. */
-const GRAV = 0.6, JUMP_V = 12.5, WALK = 2.1, RUN = 5.6, MAX_FALL = 17;
+// Tuned for fast, snappy fights.
+const GRAV = 0.74, JUMP_V = 14, WALK = 3.1, RUN = 7.4, MAX_FALL = 19;
 const DASH_T = 13, BACKFLIP_T = 26, WALL_MAX_T = 80;
 const ACTIONABLE = new Set(['idle', 'walk', 'run', 'crouch', 'block', 'sit', 'sleep', 'wave', 'victory', 'taunt']);
 
 const PALETTE = [
-  { name: 'Orange', color: '#ff8a1f', arch: 'Brawler' },
-  { name: 'Blue', color: '#2f8bff', arch: 'Tactician' },
-  { name: 'Red', color: '#ff3b3b', arch: 'Acrobat' },
-  { name: 'Green', color: '#2fd36b', arch: 'Zoner' },
-  { name: 'Purple', color: '#b061ff', arch: 'Tactician' },
-  { name: 'Yellow', color: '#f5d000', arch: 'Brawler' },
-  { name: 'Cyan', color: '#22d3ee', arch: 'Acrobat' },
-  { name: 'Pink', color: '#ff5fb8', arch: 'Zoner' },
-  { name: 'Lime', color: '#a3e635', arch: 'Brawler' },
-  { name: 'White', color: '#f1f1f1', arch: 'Tactician' },
-  { name: 'Teal', color: '#14b8a6', arch: 'Acrobat' },
-  { name: 'Black', color: '#2a2a2e', arch: 'Zoner' },
+  { name: 'Orange', color: '#ff7a1a', arch: 'Brawler', el: 'spark' },
+  { name: 'Blue', color: '#2f7dff', arch: 'Tactician', el: 'volt' },
+  { name: 'Red', color: '#ff2a2a', arch: 'Acrobat', el: 'shadow' },
+  { name: 'Green', color: '#27d35c', arch: 'Zoner', el: 'spark' },
+  { name: 'Purple', color: '#a24dff', arch: 'Tactician', el: 'shadow' },
+  { name: 'Yellow', color: '#ffd21a', arch: 'Brawler', el: 'volt' },
+  { name: 'Cyan', color: '#1fd8f0', arch: 'Acrobat', el: 'volt' },
+  { name: 'Pink', color: '#ff58b4', arch: 'Zoner', el: 'spark' },
+  { name: 'Lime', color: '#a6ee2c', arch: 'Brawler', el: 'fire' },
+  { name: 'White', color: '#f2f2f2', arch: 'Tactician', el: 'volt' },
+  { name: 'Teal', color: '#12b5a2', arch: 'Acrobat', el: 'shadow' },
+  { name: 'Black', color: '#333338', arch: 'Zoner', el: 'fire' },
 ];
+// Element -> effect colors. Each fighter's hits, aura and projectiles use its element.
+const ELEMENTS = {
+  fire: { main: '#ff8a1a', hot: '#ffe14d', core: '#ffffff', dark: '#d8340f' },
+  volt: { main: '#29c6ff', hot: '#9ef0ff', core: '#ffffff', dark: '#1468ff' },
+  shadow: { main: '#ff2a2a', hot: '#ff6a4d', core: '#0b0b0b', dark: '#6a0000' },
+  spark: { main: '#8fe35a', hot: '#d6ff9a', core: '#ffffff', dark: '#3c9a2a' },
+};
 const ARCH_NAMES = ['Brawler', 'Tactician', 'Acrobat', 'Zoner'];
 
 function shade(hex, amt) {
@@ -49,8 +57,11 @@ class Fighter {
     this.color = cfg.color;
     this.dark = shade(cfg.color, -0.38);
     this.light = shade(cfg.color, 0.55);
-    // Very dark fighters get a light outline so they stay visible.
-    this.outline = parseInt(cfg.color.slice(1, 3), 16) < 70 ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
+    this.outline = '#0a0a0a';
+    // Very dark fighters get a faint light rim so they stay visible on dark desktops.
+    this.rim = parseInt(cfg.color.slice(1, 3), 16) < 80;
+    this.el = cfg.el || 'spark';
+    this.elc = ELEMENTS[this.el];
     this.archName = cfg.arch;
     this.arch = ARCHETYPES[cfg.arch];
     this.team = cfg.team || 0;
@@ -150,7 +161,7 @@ class Fighter {
         break;
       case 'getup':
         this.vx = 0;
-        if (this.stateT >= 22) { this.getupFrom = null; this.setState('idle'); }
+        if (this.stateT >= 16) { this.getupFrom = null; this.setState('idle'); }
         break;
       case 'roll': {
         const D = 24, t = this.stateT;
@@ -162,7 +173,7 @@ class Fighter {
       }
       case 'dash': {
         const t = this.stateT;
-        this.vx = this.dashDir * 9.5 * S * (1 - (t / DASH_T) * 0.55);
+        this.vx = this.dashDir * 12.5 * S * (1 - (t / DASH_T) * 0.55);
         if (t % 2 === 0) this.world.speedLine(this);
         // Dash attacks: cancel the dash into any ground move after a few frames.
         if (t >= 4 && inp.attack && this.tryAttack(inp.attack)) { this.vx *= 0.7; return this.finishUpdate(); }
@@ -294,6 +305,7 @@ class Fighter {
     const m = MOVES[key];
     this.move = m; this.moveKey = key; this.moveT = 0; this.moveHit = null; this.hitWin = -1;
     this.hitList.clear(); this.attackId++;
+    if (this.ai) { this.ai.recent.push(key); if (this.ai.recent.length > 4) this.ai.recent.shift(); }
     if (m.air) this.airAttacks++;
     this.flip = 0; this.adT = 0;
     if (m.cost) this.meter -= m.cost;
@@ -375,7 +387,7 @@ class Fighter {
   startAirDash(dir) {
     this.airDashes--;
     this.adT = 10;
-    this.vx = dir * 9 * this.S;
+    this.vx = dir * 11.5 * this.S;
     this.vy = -0.5 * this.S;
     this.facing = dir;
     this.flip = 0; this.rot = 0;
@@ -403,7 +415,7 @@ class Fighter {
     }
     this.x += this.vx;
     this.y += this.vy;
-    const L = w.left + 8 * S, R = w.right - 8 * S;
+    const L = w.left + 18 * S, R = w.right - 18 * S; // keep limbs, not just the hip, off the walls
     if (this.x < L || this.x > R) {
       const side = this.x < L ? 1 : -1;
       this.x = this.x < L ? L : R;
@@ -569,7 +581,7 @@ class Fighter {
       q.y = this.y + (L.y[i] - oy) * S;
     }
     if (this.state === 'getup' && this.getupFrom) {
-      const k = ease(Math.min(1, this.stateT / 18));
+      const k = ease(Math.min(1, this.stateT / 13));
       for (let i = 0; i < 11; i++) {
         const q = pts[JOINTS[i]], f = this.getupFrom[i];
         q.x = lerp(f.x, q.x, k); q.y = lerp(f.y, q.y, k);
@@ -588,7 +600,7 @@ class Fighter {
     const fast = this.state === 'roll' || this.state === 'run' || this.state === 'dash' || this.state === 'backflip' ||
       this.flip > 0 || this.adT > 0 || (m && (m.dashV || m.slideV || m.spin || m.dive || m.pound)) ||
       (this.rag && this.rag.thrower && this.rag.t < 40);
-    if (fast && this.world.tick % 2 === 0) {
+    if (fast && this.world.tick % 3 === 0) {
       this.ghosts.push({ pts: JOINTS.map((j) => ({ x: this.pts[j].x, y: this.pts[j].y })), life: 12 });
     }
     for (const g of this.ghosts) g.life--;
@@ -699,7 +711,7 @@ class Fighter {
     this.x = r.p[2].x;
     this.y = low;
     r.still = maxV < 0.7 * S ? r.still + 1 : 0;
-    if (this.state === 'ragdoll' && r.t > 40 && (r.still > 10 || r.t > 220)) this.getUp();
+    if (this.state === 'ragdoll' && r.t > 26 && (r.still > 6 || r.t > 150)) this.getUp();
     else this.skeleton();
   }
 
@@ -739,7 +751,7 @@ class Fighter {
   getUp() {
     const r = this.rag, w = this.world, S = this.S;
     const hip = r.p[2];
-    this.x = clamp(hip.x, w.left + 10 * S, w.right - 10 * S);
+    this.x = clamp(hip.x, w.left + 18 * S, w.right - 18 * S);
     // Search from the hip, not the lowest limb: a leg dangling off a window edge
     // must not make us stand up on the floor far below.
     const p = w.surfaceBelow(this.x, hip.y - 6 * S);
@@ -759,7 +771,7 @@ class Fighter {
     this.y = py;
     this.plat = p; this.onGround = true;
     this.getupFrom = r.p.map((q) => ({ x: q.x, y: q.y }));
-    this.invuln = 26;
+    this.invuln = 20;
     copyPose(this.pose, POSES.crouch);
     this.setState('getup', true);
     this.skeleton();

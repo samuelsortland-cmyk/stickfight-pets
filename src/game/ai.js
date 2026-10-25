@@ -12,10 +12,10 @@
  * - Learns per-move weights from what lands and what gets punished.
  * - Outside fights it behaves like a desktop pet. */
 const ARCHETYPES = {
-  Brawler:   { aggr: 0.9,  def: 0.45, react: [12, 20], combo: 0.85, spacing: 40,  jumpy: 0.2,  zoning: 0.1, parry: 0.1,  mobility: 0.5 },
-  Tactician: { aggr: 0.55, def: 0.8,  react: [9, 15],  combo: 0.8,  spacing: 60,  jumpy: 0.15, zoning: 0.3, parry: 0.35, mobility: 0.45 },
-  Zoner:     { aggr: 0.45, def: 0.6,  react: [11, 18], combo: 0.6,  spacing: 150, jumpy: 0.12, zoning: 0.9, parry: 0.15, mobility: 0.6 },
-  Acrobat:   { aggr: 0.75, def: 0.5,  react: [10, 17], combo: 0.8,  spacing: 65,  jumpy: 0.6,  zoning: 0.2, parry: 0.2,  mobility: 1 },
+  Brawler:   { aggr: 1.0,  def: 0.35, react: [12, 20], combo: 0.85, spacing: 40,  jumpy: 0.2,  zoning: 0.1, parry: 0.1,  mobility: 0.5 },
+  Tactician: { aggr: 0.75, def: 0.65, react: [9, 15],  combo: 0.8,  spacing: 60,  jumpy: 0.15, zoning: 0.3, parry: 0.35, mobility: 0.45 },
+  Zoner:     { aggr: 0.6,  def: 0.5,  react: [11, 18], combo: 0.6,  spacing: 150, jumpy: 0.12, zoning: 0.9, parry: 0.15, mobility: 0.6 },
+  Acrobat:   { aggr: 0.9,  def: 0.4,  react: [10, 17], combo: 0.8,  spacing: 65,  jumpy: 0.6,  zoning: 0.2, parry: 0.2,  mobility: 1 },
 };
 
 const LINES = {
@@ -45,7 +45,7 @@ function newBrain() {
     lastSeen: '', comboFor: -1, queued: null, airChase: 0, climb: 0, runT: 0, taunt: 0,
     wallPlan: 0, crossT: 0, crossDir: 0, afterDash: null, airPlan: null, wallT: 0,
     pet: null, petT: 0, goal: 0, goalPlat: null, angry: 0, oppBlock: 0, oppSeen: 1,
-    projSeen: new WeakSet(), chatT: rand(600, 1800),
+    projSeen: new WeakSet(), chatT: rand(600, 1800), recent: [],
   };
 }
 
@@ -200,10 +200,11 @@ function combatThink(f, w, inp, ai) {
   if (oDown) {
     // Opponent is down: hover at a safe distance, taunt, or reposition with style.
     if (ai.taunt > 0) { ai.taunt--; inp.pet = 'taunt'; return; }
-    if (adx > 80 * S) inp.move = dir;
-    else if (adx < 50 * S && !cornered) inp.move = -dir;
-    if (chance(0.005)) ai.taunt = 50;
-    else if (chance(0.004 * A.mobility)) inp.backflip = true;
+    // Opponent is down: close in and get ready to pressure the wake-up.
+    if (adx > 60 * S) { inp.move = dir; inp.run = adx > 140 * S; }
+    else if (adx < 35 * S && !cornered) inp.move = -dir;
+    if (chance(0.0015)) ai.taunt = 30;
+    else if (chance(0.006 * A.mobility)) inp.backflip = true;
     return;
   }
 
@@ -234,7 +235,7 @@ function combatThink(f, w, inp, ai) {
     inp.move = dir;
     if (adx > 230 * S || ai.runT > 0) inp.run = true;
     if (ai.runT > 0) ai.runT--;
-    else if (adx > want + 50 * S && adx < 260 * S && chance(0.012 * aggr * (0.5 + A.mobility))) {
+    else if (adx > want + 40 * S && adx < 300 * S && chance(0.03 * aggr * (0.5 + A.mobility))) {
       inp.dash = dir;
       ai.afterDash = pick(['jab', 'cross', 'kick', 'jab', 'heavy']);
       return;
@@ -243,12 +244,12 @@ function combatThink(f, w, inp, ai) {
     if (!cornered) inp.move = -dir;
   }
   if (f.meter >= 50 && adx > 120 * S && Math.abs(dy) < 40 * S && chance(A.zoning * 0.025)) { inp.attack = 'blast'; return; }
-  if (adx > 55 * S && adx < 180 * S && chance(A.jumpy * 0.02)) {
+  if (adx > 55 * S && adx < 200 * S && chance(A.jumpy * 0.035)) {
     inp.jump = true; inp.move = dir;
     ai.airPlan = chance(A.mobility) ? 'airdash' : null;
     return;
   }
-  if (Math.abs(dy) < 30 * S && chance(aggr * 0.1)) {
+  if (Math.abs(dy) < 30 * S && chance(aggr * 0.17)) {
     const opt = chooseAttack(f, adx, seen, ai);
     if (opt) { inp.attack = opt; inp.move = 0; }
   }
@@ -275,7 +276,7 @@ function chooseAttack(f, adx, seen, ai) {
     if (key === 'heavy') wgt *= 0.5 + (adx > reach * 0.6 ? 0.8 : 0);
     if (key === 'uppercut' && adx > 30 * S) wgt *= 0.3;
     if (key === 'slide' && adx < 40 * S) wgt *= 0.2;
-    wgt *= f.stats.w[key] == null ? 1 : f.stats.w[key];
+    wgt *= (f.stats.w[key] == null ? 1 : f.stats.w[key]) * variety(ai, key);
     opts.push([key, wgt]);
   }
   return weightedPick(opts);
@@ -291,9 +292,16 @@ function pickCancel(f, o) {
     if (!!n.air === f.onGround) continue;
     if (!n.projectile && adx > n.reach * f.S * 1.1) continue;
     const base = n.superMove ? 4 : (n.ai || 0.5) * (n.dmg / 6);
-    opts.push([key, base * (f.stats.w[key] == null ? 1 : f.stats.w[key])]);
+    opts.push([key, base * (f.stats.w[key] == null ? 1 : f.stats.w[key]) * variety(f.ai, key)]);
   }
   return weightedPick(opts);
+}
+
+// Mixing it up: each recent use of a move makes it less likely to be picked again.
+function variety(ai, key) {
+  let k = 1;
+  for (const r of ai.recent) if (r === key) k *= 0.35;
+  return k;
 }
 
 function bestPunish(f, adx, framesLeft) {

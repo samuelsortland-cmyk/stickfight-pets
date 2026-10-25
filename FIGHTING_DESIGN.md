@@ -144,6 +144,17 @@ The super freezes everyone else for 28 frames, the classic "super flash". It als
 
 In free-for-all, the same "busy" bonus makes fighters third-party ongoing fights. That keeps big brawls chaotic but not random.
 
+## 8. Version 2.1: faster, more aggressive, less crowded
+
+- **Pace:** gravity, jump speed, walk, run, dash and air-dash speed are all up about 25–35%. Getting up from a knockdown takes 16 frames instead of 22. Damage is ×1.25. Intros, K.O. screens and the default break between rounds are shorter. In simulation, a 1v1 round is about a third shorter.
+- **Offense:** every style is more aggressive and blocks less. The AI is about 70% more likely to start an attack each frame in neutral, dashes in more than twice as often, and jumps in more. Against a knocked-down opponent it closes in to pressure the wake-up instead of taunting from a distance.
+- **Variety:** the AI keeps its last 4 moves, and each repeat cuts a move's chance by 65%. This stops one strong option, like the slide, from taking over. The slide also got a readable 11-frame wind-up, so defenders can see it coming and block low.
+- **Less crowded:**
+  - Horizontal knockback is ×1.4, so fights travel across the screen.
+  - Fighters keep more personal space.
+  - In free-for-all, fighters prefer opponents nobody else is attacking, so a big brawl splits into separate duels instead of one pile.
+  - In teams, only the leader and the flanker go after the focus target. Everyone else spreads out to the least-crowded enemy.
+
 ## Sources
 
 - Dustloop, "Using Frame Data": https://dustloop.com/w/Using_Frame_Data

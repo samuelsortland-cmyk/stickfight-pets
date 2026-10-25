@@ -38,7 +38,9 @@ function weightedPick(entries) {
   return entries[entries.length - 1][0];
 }
 
-const BODY = { thigh: 21, shin: 21, torso: 30, neck: 11, headR: 9, upper: 16, fore: 15 };
+// Proportions follow the chunky Animator-vs-Animation pixel style: a big hollow
+// ring head sitting right on the torso and thick limbs.
+const BODY = { thigh: 20, shin: 21, torso: 27, neck: 12, headR: 11, upper: 16, fore: 15, limb: 7, outline: 2.4 };
 const JOINTS = ['head', 'neck', 'hip', 'e1', 'h1', 'e2', 'h2', 'k1', 'f1', 'k2', 'f2'];
 const JI = Object.fromEntries(JOINTS.map((j, i) => [j, i]));
 const BONES = [[0, 1], [1, 2], [1, 3], [3, 4], [1, 5], [5, 6], [2, 7], [7, 8], [2, 9], [9, 10]];

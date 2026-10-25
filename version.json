@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "notes": "v2: wall jumps, dashes, supers, team tactics, effects, control panel, self-update",
+  "version": "2.1.0",
+  "notes": "v2.1: pixel-art restyle, new tool dock, faster and more aggressive fights",
   "files": [
     {
       "path": "main.js",
@@ -16,15 +16,15 @@
     },
     {
       "path": "package.json",
-      "sha256": "337568a2be42b7be916490455814b7c66f967a340d7e15f2d739f0b7b1cb2dd2"
+      "sha256": "f72a61b498524bcf42a02a8ac65ff3b62a26f498e5bb84882b66489031b3d875"
     },
     {
       "path": "README.md",
-      "sha256": "151f52e5cdeb782a57e47b24a0dea61bcc2fdf30ff9748be6825191fa13ea586"
+      "sha256": "1c193093f314fbe9f3a365056d1d9b6c88c7df5896c1410120b481869a622c6d"
     },
     {
       "path": "FIGHTING_DESIGN.md",
-      "sha256": "54d566848d41d25423c399eba8b6885f44892225a2fd65f2af6e76ca3f76aa6f"
+      "sha256": "73acfdc407e8fd5b1f28e706dd09671a9ed757d23f8cd3dfd651bb3c9b899e16"
     },
     {
       "path": "Start StickFight.bat",
@@ -32,39 +32,39 @@
     },
     {
       "path": "src/app.js",
-      "sha256": "588c0f75b768b2e39c56f70f86191faccd47b4838b822091b8676043d71bbdf0"
+      "sha256": "94f1b7c60877546f35b47fb08617e4ffd80ac1347be1d0c87e0b36ddb3de9d61"
     },
     {
       "path": "src/game/ai.js",
-      "sha256": "d6dc082d38aaee87c5ddf9f63d2d6eb2638a552bce3748294e81892cbcea5ac5"
+      "sha256": "0a64cbaeabd24a7ca124015a9e82b1bc55ce26400b41eeb82e365e03a3cd930b"
     },
     {
       "path": "src/game/fighter.js",
-      "sha256": "cd75ff11aceb186c7ea2164217e3daf8d6f89ba4db3799348f230cb996de9824"
+      "sha256": "f78689d7801089b75c89e1ce6fa1c0686780ce8cda7adacefdbab1ec42e0636c"
     },
     {
       "path": "src/game/moves.js",
-      "sha256": "96296231810353cae2c5b34fa0a8f8149f295bd49c24c4bbf23a4d58f3af8728"
+      "sha256": "4a86c4c63e6abdce2c53a3bff667f696a889e42cc7bb2cee8052f6d82e4845c5"
     },
     {
       "path": "src/game/poses.js",
-      "sha256": "705076b4a9a6c1b34b7c086d0b056dfd52f9fd27b3d6e8722ec4372e0a5e176c"
+      "sha256": "f1f0f7bef040396fb4a11c99afadad139239d57096a794e4eccfaa6a0b3a5a27"
     },
     {
       "path": "src/game/render.js",
-      "sha256": "96653289d245a5b2a1324848a5be20d94d25aba25d504e21ddd8d1b786a1989a"
+      "sha256": "7ab01b2435aafa1b0b85d6ab0b348a555e48ad1252c9a51e0a5b3cee44436806"
     },
     {
       "path": "src/game/world.js",
-      "sha256": "00d8ea549c0a33e16f172b1023c40b7a1088ea95af1723ff1e26586b0b95fe57"
+      "sha256": "65fcf064288f4d9f77369fd37844a9df88119811671cfdef86bb2a921b7114b3"
     },
     {
       "path": "src/index.html",
-      "sha256": "2363c3465d6133a7998c86813f3a396bc593a70d07bbea35eba5a0eec9ff2c21"
+      "sha256": "23e1974aeda1d0124f2c9e1369b112a5799e2ebaae5295b873afc5fdccc38973"
     },
     {
       "path": "src/ui.js",
-      "sha256": "af1da293741a88824d22aa38d872eb1dce04a8b6ea26e1bd78b0e0bde14ff6ec"
+      "sha256": "2a7ca77b971fc3697a618b549f4618cb29140888c7d4fb4d2bfe6ab1dae5ffdd"
     },
     {
       "path": "src/windows.js",
@@ -73,6 +73,14 @@
     {
       "path": "assets/icon.png",
       "sha256": "43100b811f4a223f143895c05f2f8f348e7347c2f31d24072a8f96bef100b404"
+    },
+    {
+      "path": "assets/stickpix.ttf",
+      "sha256": "1a15bf546b4f645bbff35235c31f2200d86fb9ebed91e21d4c799ddda29dfb6b"
+    },
+    {
+      "path": "tools/build-font.py",
+      "sha256": "25b82b4b07cd4681f436b47b8966d1df7b25617d125da8de5b14dec451ee0205"
     },
     {
       "path": "tools/make-manifest.js",

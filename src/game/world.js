@@ -85,7 +85,7 @@ class World {
     const arch = opts.arch && ARCHETYPES[opts.arch] ? opts.arch : cfg.arch;
     const f = new Fighter(this, {
       id: this.fighters.length ? Math.max(...this.fighters.map((q) => q.id)) + 1 : 1,
-      name: cfg.name, color: cfg.color, arch,
+      name: cfg.name, color: cfg.color, el: cfg.el, arch,
       x: opts.x != null ? clamp(opts.x, this.left + 20 * S, this.right - 20 * S) : rand(this.left + 80 * S, this.right - 80 * S),
       y: opts.y != null ? opts.y : -120 * S,
     });
@@ -293,8 +293,8 @@ class World {
     if (Math.hypot(j.x - c.x, j.y - c.y) < (m.rad + 14) * this.S) {
       f.hitList.add('cursor');
       f.moveHit = 'hit';
-      this.impact(c.x, c.y, f.facing, 10, f.light);
-      this.burst(c.x, c.y, 60 * this.S);
+      this.hitFx(f, c.x, c.y, f.facing, 10);
+      this.burst(c.x, c.y, 60 * this.S, f.elc.hot);
       this.text(c.x, c.y - 14, pick(['POW!', 'BAM!', 'WHACK!']), '#fff', 18);
       this.shake = Math.max(this.shake, 5);
       f.ai.angry = Math.max(0, f.ai.angry - 160);
@@ -416,8 +416,8 @@ class World {
     this.flashFx(x, y, 34 * S);
     this.burst(x, y, 120 * S);
     this.ring(x, y, '#ffffff', 50 * S);
-    this.impact(x, y, 1, 14, a.light);
-    this.impact(x, y, -1, 14, b.light);
+    this.hitFx(a, x, y, -1, 14);
+    this.hitFx(b, x, y, 1, 14);
     this.text(x, y - 30 * S, 'CLASH!', '#ffffff', 22);
     this.shake = Math.max(this.shake, 10);
     this.impactT = 3;
@@ -468,6 +468,7 @@ class World {
     if (d.state === 'attack' && d.phase() === 'recovery') d.learn(d.moveKey, -0.5);
     let dmg = m.dmg * Math.max(0.35, 1 - 0.12 * d.combo) * (1 + Math.min(0.2, 0.03 * (a.level - 1)));
     if (counter) dmg *= 1.2;
+    dmg *= 1.25; // fast rounds
     this.damage(d, dmg, a);
     d.combo++;
     a.moveHit = 'hit';
@@ -479,14 +480,15 @@ class World {
     d.lastHitBy = a;
     d.lastHitT = this.tick;
     this.shake = Math.max(this.shake, m.stop * 0.7);
-    this.impact(at.x, at.y, a.facing, m.dmg, a.light);
-    if (m.dmg >= 10 || m.finisher) { this.burst(at.x, at.y, (70 + m.dmg * 5) * S); this.impactT = m.finisher ? 4 : 2; }
+    this.hitFx(a, at.x, at.y, a.facing, m.dmg);
+    if (m.dmg >= 10 || m.finisher) { this.burst(at.x, at.y, (70 + m.dmg * 5) * S, a.elc.hot); this.impactT = m.finisher ? 4 : 2; }
     if (counter) this.text(at.x, at.y - 24 * S, 'COUNTER', '#ffd23f', 14);
     if (d.combo >= 2) {
       const big = d.combo >= 5;
       this.text(d.pts.head.x, d.pts.head.y - 30 * S, d.combo + (big ? ' HIT COMBO!' : ' HITS'), a.color, big ? 20 : 16);
     }
-    const kx = a.facing * m.kb[0] * S, ky = m.kb[1] * S;
+    // Extra horizontal knockback spreads fights across the screen.
+    const kx = a.facing * m.kb[0] * S * 1.4, ky = m.kb[1] * S;
     if (d.hp <= 0) {
       d.move = null;
       d.startRagdoll(kx * 1.6, Math.min(ky, -6 * S) * 1.3, a.facing * 0.15, 'ko');
@@ -544,7 +546,9 @@ class World {
     if (this.cinematic) this.dimT = 70;
     this.ring(f.pts.neck.x, f.pts.neck.y, f.light, 70 * S);
     this.ring(f.pts.neck.x, f.pts.neck.y, '#ffffff', 40 * S);
-    this.burst(f.pts.neck.x, f.pts.neck.y, 150 * S, f.light);
+    this.burst(f.pts.neck.x, f.pts.neck.y, 150 * S, f.elc.main);
+    this.elemFx(f.el, f.pts.neck.x, f.pts.neck.y, f.facing, 16);
+    this.elemFx(f.el, f.pts.neck.x, f.pts.neck.y, -f.facing, 16);
     this.text(f.pts.head.x, f.pts.head.y - 40 * S, 'OMNI FLURRY!', f.light, 24);
     f.say(pick(['Here goes!', 'Full power!', 'Watch this.', 'HAAAA!']), 60);
   }
@@ -618,11 +622,11 @@ class World {
           this.impact(p.x, p.y, dir, 6, '#cfe8ff');
           p.owner.learn('blast', -0.1);
         } else {
-          this.damage(o, 10 * Math.max(0.35, 1 - 0.12 * o.combo), p.owner);
+          this.damage(o, 12 * Math.max(0.35, 1 - 0.12 * o.combo), p.owner);
           o.combo++;
           o.flash = 4; o.hitstop = 6;
-          this.impact(p.x, p.y, dir, 12, p.owner.light);
-          this.burst(p.x, p.y, 80 * S, p.owner.light);
+          this.hitFx(p.owner, p.x, p.y, dir, 12);
+          this.burst(p.x, p.y, 80 * S, p.owner.elc.hot);
           this.shake = Math.max(this.shake, 6);
           p.owner.learn('blast', 0.5);
           if (o.hp <= 0) { o.startRagdoll(dir * 8 * S, -7 * S, dir * 0.1, 'ko'); this.onKO(o, p.owner); }
@@ -671,8 +675,8 @@ class World {
         const b = F[j];
         if (b.rag || b.state === 'grabbed' || b.state === 'wall' || a.grabbed === b || b.grabbed === a) continue;
         const dx = b.x - a.x;
-        if (Math.abs(dx) < 24 * S && Math.abs(a.y - b.y) < 40 * S) {
-          const push = ((24 * S - Math.abs(dx)) / 2) * (sign(dx) || (a.id < b.id ? 1 : -1));
+        if (Math.abs(dx) < 34 * S && Math.abs(a.y - b.y) < 40 * S) {
+          const push = ((34 * S - Math.abs(dx)) / 2) * 0.5 * (sign(dx) || (a.id < b.id ? 1 : -1));
           a.x -= push; b.x += push;
         }
       }
@@ -697,7 +701,9 @@ class World {
       if (!enemies.length) { for (const f of members) { f.target = null; f.role = 'idle'; } continue; }
       // Focus: weakest + closest enemy, with a bias for enemies busy fighting someone else.
       const cx = members.reduce((s, f) => s + f.x, 0) / members.length;
-      const score = (o) => o.hp * 1.5 + Math.abs(o.x - cx) / this.S * 0.4 - (this.isBusy(o) ? 40 : 0);
+      // FFA: pick fresh opponents so the screen splits into separate duels instead of one pile.
+      const ffa = this.match !== 'teams';
+      const score = (o) => o.hp * 1.5 + Math.abs(o.x - cx) / this.S * 0.4 + (ffa ? this.attackers(o, team) * 70 : (this.isBusy(o) ? -40 : 0));
       let focus = enemies[0];
       for (const o of enemies) if (score(o) < score(focus)) focus = o;
       // Break up combos on a teammate.
@@ -719,7 +725,10 @@ class World {
           assigned++;
         } else {
           f.role = 'lead';
-          f.target = nearest(f, enemies.filter((o) => o !== focus)) || focus;
+          // Extra members spread to the least-crowded enemy instead of piling on.
+          const others = enemies.filter((o) => o !== focus);
+          others.sort((p, q) => this.attackers(p, team) - this.attackers(q, team) || Math.abs(p.x - f.x) - Math.abs(q.x - f.x));
+          f.target = others[0] || focus;
         }
         if (f.rescueT) f.rescueT = Math.max(0, f.rescueT - 20);
         if (this.match === 'teams' && prev !== f.role && !f.bubble && chance(0.25)) {
@@ -729,6 +738,12 @@ class World {
         }
       }
     }
+  }
+
+  attackers(o, exceptTeam) {
+    let n = 0;
+    for (const f of this.fighters) if (f.target === o && f.hp > 0 && f.team !== exceptTeam) n++;
+    return n;
   }
 
   isBusy(o) {
@@ -777,8 +792,8 @@ class World {
         if (this.phaseT >= this.restTicks) this.startRound();
         break;
       case 'intro':
-        if (this.phaseT === 55) this.banner('FIGHT!', 45, '#ffd23f');
-        if (this.phaseT >= 70) this.setPhase('fight');
+        if (this.phaseT === 30) this.banner('FIGHT!', 40, '#ffd23f');
+        if (this.phaseT >= 42) this.setPhase('fight');
         break;
       case 'fight':
         if (teamsLeft.size <= 1) {
@@ -788,7 +803,7 @@ class World {
         }
         break;
       case 'ko':
-        if (this.phaseT >= 90) {
+        if (this.phaseT >= 70) {
           for (const f of this.fighters) {
             const won = f.team === this.winTeam && this.winTeam >= 0;
             if (won) { f.stats.wins++; if (f.hp > 0) f.say(pick(LINES.win), 160); } else f.stats.losses++;
@@ -800,7 +815,7 @@ class World {
         }
         break;
       case 'victory':
-        if (this.phaseT >= 200) this.setPhase('rest');
+        if (this.phaseT >= 130) this.setPhase('rest');
         break;
     }
     this.inCombat = this.phase === 'intro' || this.phase === 'fight' || this.phase === 'ko';
@@ -815,6 +830,61 @@ class World {
       this.fx.push({ type: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: randi(8, 16), max: 16, len: rand(3, 6) * this.S, color });
     }
     this.flashFx(x, y, (8 + power * 1.6) * this.S, color);
+  }
+  // Element-flavored hit effects (fire, volt, shadow, spark) in the attacker's style.
+  hitFx(a, x, y, dir, power) {
+    this.impact(x, y, dir, power, a.elc.hot);
+    this.elemFx(a.el, x, y, dir, power);
+  }
+  elemFx(el, x, y, dir, power) {
+    const S = this.S, E = ELEMENTS[el], n = 3 + Math.round(power / 2);
+    if (el === 'fire') {
+      for (let i = 0; i < n + 3; i++) {
+        this.fx.push({ type: 'flame', x: x + rand(-6, 6) * S, y: y + rand(-6, 6) * S, vx: (dir * rand(0.5, 3) + rand(-1, 1)) * S, vy: rand(-2.5, -0.5) * S,
+          r: rand(3, 4 + power * 0.35) * S, life: randi(14, 26), max: 26, E });
+      }
+    } else if (el === 'volt') {
+      for (let i = 0; i < Math.ceil(n / 2) + 1; i++) {
+        const a = (dir > 0 ? 0 : Math.PI) + rand(-1.6, 1.6);
+        this.fx.push({ type: 'zap', pts: jagged(x, y, a, rand(18, 26 + power * 2) * S, 4), life: randi(6, 10), max: 10, E });
+      }
+      for (let i = 0; i < n; i++) {
+        const a = rand(0, TAU), sp = rand(1, 3.5) * S;
+        this.fx.push({ type: 'sq', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, size: rand(3, 5) * S, life: randi(12, 22), max: 22, color: E.main });
+      }
+    } else if (el === 'shadow') {
+      for (let i = 0; i < n; i++) {
+        const a = (dir > 0 ? 0 : Math.PI) + rand(-1.3, 1.3);
+        this.fx.push({ type: 'spike', x, y, a, len: rand(14, 22 + power * 2.2) * S, w: rand(3, 6) * S, life: randi(9, 14), max: 14, E });
+      }
+    } else {
+      for (let i = 0; i < n; i++) {
+        const a = rand(0, TAU), d = rand(6, 14 + power * 1.5) * S;
+        this.fx.push({ type: 'star', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, r: rand(5, 8 + power * 0.4) * S, life: randi(12, 22), max: 22, E });
+      }
+    }
+  }
+  // Ambient aura while the meter is charged; stronger when it is full.
+  auraFx(f) {
+    const S = this.S, E = f.elc, P = f.pts, full = f.meter >= 100;
+    const every = full ? 3 : 9;
+    if (this.tick % every !== f.id % every) return;
+    const hand = chance(0.5) ? P.h1 : P.h2;
+    if (f.el === 'fire') {
+      this.fx.push({ type: 'flame', x: hand.x + rand(-3, 3) * S, y: hand.y, vx: rand(-0.4, 0.4) * S, vy: rand(-2, -1) * S, r: rand(2.5, full ? 5 : 3.5) * S, life: randi(12, 20), max: 20, E });
+    } else if (f.el === 'volt') {
+      if (full && chance(0.5)) {
+        const a = rand(0, TAU);
+        this.fx.push({ type: 'zap', pts: jagged(P.hip.x + Math.cos(a) * 14 * S, P.hip.y - 14 * S + Math.sin(a) * 24 * S, a, rand(10, 18) * S, 3), life: 5, max: 5, E });
+      }
+      const a = this.tick * 0.12 + f.id;
+      this.fx.push({ type: 'sq', x: P.hip.x + Math.cos(a) * 24 * S, y: P.hip.y - 10 * S + Math.sin(a) * 30 * S, vx: 0, vy: -0.3 * S, size: 3.5 * S, life: 12, max: 12, color: E.main });
+    } else if (f.el === 'shadow') {
+      const a = -Math.PI / 2 + rand(-1.2, 1.2);
+      this.fx.push({ type: 'spike', x: P.hip.x + rand(-10, 10) * S, y: P.hip.y + rand(-20, 5) * S, a, len: rand(8, full ? 18 : 12) * S, w: 3 * S, life: 10, max: 10, E });
+    } else {
+      this.fx.push({ type: 'star', x: P.head.x + rand(-22, 22) * S, y: P.head.y + rand(-22, 14) * S, r: rand(4, full ? 8 : 6) * S, life: 16, max: 16, E });
+    }
   }
   flashFx(x, y, r, color) { this.fx.push({ type: 'flash', x, y, life: 6, max: 6, r, color: color || '#ffffff' }); }
   burst(x, y, r, color) {
@@ -833,12 +903,12 @@ class World {
   speedLine(f) {
     const S = this.S, dir = sign(f.vx) || f.facing;
     for (let i = 0; i < 2; i++) {
-      this.fx.push({ type: 'line', x: f.x - dir * rand(10, 30) * S, y: f.y - rand(10, 85) * S, dx: -dir * rand(20, 45) * S, life: 8, max: 8, color: f.light });
+      this.fx.push({ type: 'line', x: f.x - dir * rand(10, 30) * S, y: f.y - rand(10, 85) * S, dx: -dir * rand(20, 45) * S, life: 8, max: 8, color: chance(0.5) ? f.elc.main : '#ffffff' });
     }
   }
   charge(f, at) {
     const S = this.S, a = rand(0, TAU), d = rand(25, 45) * S;
-    this.fx.push({ type: 'charge', x: at.x + Math.cos(a) * d, y: at.y + Math.sin(a) * d, tx: at, life: 10, max: 10, color: f.light });
+    this.fx.push({ type: 'charge', x: at.x + Math.cos(a) * d, y: at.y + Math.sin(a) * d, tx: at, life: 10, max: 10, color: f.elc.hot });
   }
   crack(x, y, side, power) {
     // A jagged crack decal in the floor (side 0) or a screen edge (side ±1).
@@ -876,6 +946,8 @@ class World {
       else if (e.type === 'dust') { e.x += e.vx; e.y += e.vy; e.vx *= 0.93; }
       else if (e.type === 'text') e.y += e.vy || -0.6;
       else if (e.type === 'charge') { e.x = lerp(e.x, e.tx.x, 0.25); e.y = lerp(e.y, e.tx.y, 0.25); }
+      else if (e.type === 'flame') { e.x += e.vx; e.y += e.vy; e.vx *= 0.92; e.vy -= 0.04 * this.S; }
+      else if (e.type === 'sq') { e.x += e.vx; e.y += e.vy; e.vx *= 0.9; e.vy *= 0.9; }
     }
     this.fx = this.fx.filter((e) => e.life > 0);
     for (const d of this.decals) d.life--;
@@ -912,9 +984,7 @@ class World {
     this.updateProjectiles();
     this.thrownHits();
     for (const f of this.fighters) {
-      if (f.meter >= 100 && this.tick % 5 === 0 && !f.rag) {
-        this.fx.push({ type: 'ember', x: f.pts.hip.x + rand(-10, 10) * this.S, y: f.pts.hip.y + rand(-30, 20) * this.S, life: 22, max: 22, color: f.light });
-      }
+      if (f.meter >= 50 && !f.rag && f.hp > 0) this.auraFx(f);
     }
     this.updateFx();
     let changed = false;
@@ -924,6 +994,16 @@ class World {
     this.timeScale = this.slowT > 0 ? 0.3 : this.slowmo ? 0.4 : 1;
     this.shake *= 0.85;
   }
+}
+
+// A jagged lightning polyline from (x, y) heading at angle a.
+function jagged(x, y, a, len, segs) {
+  const pts = [{ x, y }];
+  for (let i = 1; i <= segs; i++) {
+    const d = (len * i) / segs, off = i < segs ? rand(-0.45, 0.45) * len / segs : 0;
+    pts.push({ x: x + Math.cos(a) * d - Math.sin(a) * off, y: y + Math.sin(a) * d + Math.cos(a) * off });
+  }
+  return pts;
 }
 
 function nearest(f, list) {

@@ -8,15 +8,17 @@
   const toastEl = document.getElementById('toast');
   const uiEl = document.getElementById('ui');
   const api = window.pets || null;
-  const SIZES = { small: 64, medium: 90, large: 130 };
-  const DEFAULTS = { size: 'medium', roster: null, match: 'ffa', peace: false, cinematic: true, rest: 5, panelOpen: true, autoUpdate: true };
+  const SIZES = { small: 84, medium: 118, large: 160 };
+  const DEFAULTS = { size: 'medium', roster: null, match: 'ffa', peace: false, cinematic: true, rest: 3, panelOpen: true, autoUpdate: true };
+  // CSS pixels per art pixel for each fighter size.
+  const PIXEL = { small: 2, medium: 2, large: 3 };
 
   const settings = (() => {
     try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('stickfight.settings'))); }
     catch (e) { return Object.assign({}, DEFAULTS); }
   })();
 
-  const view = { dpr: window.devicePixelRatio || 1, hover: null, tool: 'hand' };
+  const view = { dpr: window.devicePixelRatio || 1, hover: null, tool: 'hand', pixel: PIXEL[settings.size] || 2 };
   const world = new World({
     width: innerWidth, height: innerHeight, size: SIZES[settings.size] || 90,
     cinematic: settings.cinematic, match: settings.match, restTicks: settings.rest * 60,
@@ -41,8 +43,8 @@
       app.tool = view.tool = t;
       canvas.classList.toggle('tool', t !== 'hand');
       world.drawing = null;
-      const names = { pencil: '✏️ Pencil', eraser: '🧽 Eraser', bomb: '💣 Bomb', smite: '⚡ Lightning', spawn: '✨ Spawn' };
-      hintEl.innerHTML = t === 'hand' ? '' : `<b>${names[t]}</b> — ${TOOL_DESC[t]}`;
+      const names = { pencil: 'Pencil', eraser: 'Eraser', bomb: 'Bomb', smite: 'Lightning', spawn: 'Spawn' };
+      hintEl.innerHTML = t === 'hand' ? '' : `<b>${names[t]}</b> &nbsp;${TOOL_DESC[t]} &nbsp;<b>Esc</b> to stop`;
       hintEl.style.display = t === 'hand' ? 'none' : 'block';
       if (api) api.setToolMode(t !== 'hand');
       if (app.onToolChange) app.onToolChange(t);
@@ -165,6 +167,7 @@
   canvas.addEventListener('mousedown', (e) => {
     const x = e.clientX, y = e.clientY;
     world.cursorMove(x, y);
+    if (app.closeFly) app.closeFly();
     if (e.button === 2) { if (app.tool !== 'hand') app.setTool('hand'); return; }
     if (e.button !== 0) return;
     const f = world.fighterAt(x, y, 12);
@@ -197,24 +200,26 @@
 
   // The overlay is click-through except over a fighter, over the panel, or while a tool is active.
   let captured = false;
+  const hitEls = ['dock', 'tab', 'fly-fighters', 'fly-match', 'fly-settings', 'toast'].map((id) => document.getElementById(id));
   function cursorOverUI() {
     const c = world.cursor;
     if (!c.on || uiEl.classList.contains('hidden')) return false;
-    for (const el of [document.getElementById('tab'), document.getElementById('panel')]) {
-      if (!el.offsetParent && el.id === 'panel') continue;
+    for (const el of hitEls) {
+      if (!el || !el.offsetParent) continue; // not displayed
       const r = el.getBoundingClientRect();
-      if (r.width && c.x >= r.left - 2 && c.x <= r.right + 2 && c.y >= r.top - 2 && c.y <= r.bottom + 2) return true;
+      if (r.width && c.x >= r.left - 2 && c.x <= r.right + 6 && c.y >= r.top - 2 && c.y <= r.bottom + 6) return true;
     }
-    const tr = toastEl.style.display === 'block' && toastEl.getBoundingClientRect();
-    return !!(tr && c.x >= tr.left && c.x <= tr.right && c.y >= tr.top && c.y <= tr.bottom);
+    return false;
   }
   // Keep the fighters out from under the panel: its left edge becomes the right wall.
   let lastInset = -1;
   function updateInset() {
+    // Only the dock (or the tucked-away tab) is a wall; open cards float over the scene.
     let inset = 0;
     if (!uiEl.classList.contains('hidden')) {
-      const r = uiEl.getBoundingClientRect();
-      inset = Math.max(0, innerWidth - r.left);
+      const el = document.getElementById(uiEl.classList.contains('mini') ? 'tab' : 'dock');
+      const r = el.getBoundingClientRect();
+      if (r.width) inset = Math.max(0, innerWidth - r.left);
     }
     if (Math.abs(inset - lastInset) > 0.5) { lastInset = inset; world.setInsetRight(inset); }
   }
@@ -231,6 +236,7 @@
     }
   }
 
+  if (document.fonts && document.fonts.load) document.fonts.load('16px StickPix').catch(() => {});
   initUI(app);
   app.setTool('hand');
   if (api) api.ready({ autoUpdate: settings.autoUpdate });
