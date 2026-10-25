@@ -1,0 +1,14 @@
+{
+  "name": "stickfight-pets",
+  "version": "2.0.0",
+  "description": "AI stickman desktop pets that fight each other on your screen, inspired by Animator vs. Animation.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "manifest": "node tools/make-manifest.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "31.7.7"
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "version": "2.0.0",
+  "notes": "v2: wall jumps, dashes, supers, team tactics, effects, control panel, self-update",
+  "files": [
+    {
+      "path": "main.js",
+      "sha256": "72322d11fb1c112dd9b3defcaca330527aea01e2103adb81f6e5c1e4397f7e54"
+    },
+    {
+      "path": "preload.js",
+      "sha256": "dd066b4f7e35e86486066912860004d935791171ffb0397eeadd46adc3302069"
+    },
+    {
+      "path": "updater.js",
+      "sha256": "a1f9cd58426a0f376b299abe450701c0baf32437220fb0f2e13b82b88c25201b"
+    },
+    {
+      "path": "package.json",
+      "sha256": "337568a2be42b7be916490455814b7c66f967a340d7e15f2d739f0b7b1cb2dd2"
+    },
+    {
+      "path": "README.md",
+      "sha256": "151f52e5cdeb782a57e47b24a0dea61bcc2fdf30ff9748be6825191fa13ea586"
+    },
+    {
+      "path": "FIGHTING_DESIGN.md",
+      "sha256": "54d566848d41d25423c399eba8b6885f44892225a2fd65f2af6e76ca3f76aa6f"
+    },
+    {
+      "path": "Start StickFight.bat",
+      "sha256": "25dac4077ad12f4640eb3ff6ede39d5fae2adc26826f3958ac5408ad0f4f8d56"
+    },
+    {
+      "path": "src/app.js",
+      "sha256": "588c0f75b768b2e39c56f70f86191faccd47b4838b822091b8676043d71bbdf0"
+    },
+    {
+      "path": "src/game/ai.js",
+      "sha256": "d6dc082d38aaee87c5ddf9f63d2d6eb2638a552bce3748294e81892cbcea5ac5"
+    },
+    {
+      "path": "src/game/fighter.js",
+      "sha256": "cd75ff11aceb186c7ea2164217e3daf8d6f89ba4db3799348f230cb996de9824"
+    },
+    {
+      "path": "src/game/moves.js",
+      "sha256": "96296231810353cae2c5b34fa0a8f8149f295bd49c24c4bbf23a4d58f3af8728"
+    },
+    {
+      "path": "src/game/poses.js",
+      "sha256": "705076b4a9a6c1b34b7c086d0b056dfd52f9fd27b3d6e8722ec4372e0a5e176c"
+    },
+    {
+      "path": "src/game/render.js",
+      "sha256": "96653289d245a5b2a1324848a5be20d94d25aba25d504e21ddd8d1b786a1989a"
+    },
+    {
+      "path": "src/game/world.js",
+      "sha256": "00d8ea549c0a33e16f172b1023c40b7a1088ea95af1723ff1e26586b0b95fe57"
+    },
+    {
+      "path": "src/index.html",
+      "sha256": "2363c3465d6133a7998c86813f3a396bc593a70d07bbea35eba5a0eec9ff2c21"
+    },
+    {
+      "path": "src/ui.js",
+      "sha256": "af1da293741a88824d22aa38d872eb1dce04a8b6ea26e1bd78b0e0bde14ff6ec"
+    },
+    {
+      "path": "src/windows.js",
+      "sha256": "f72fd1a2c5b7054b923145fd9e9ad6e7954ec8d5a40ee7ededb26360385f6792"
+    },
+    {
+      "path": "assets/icon.png",
+      "sha256": "43100b811f4a223f143895c05f2f8f348e7347c2f31d24072a8f96bef100b404"
+    },
+    {
+      "path": "tools/make-manifest.js",
+      "sha256": "874a1768f5d87f44fbd75a0336019bc668ecf8dbe65d056420b9a853653e15b2"
+    }
+  ]
+}

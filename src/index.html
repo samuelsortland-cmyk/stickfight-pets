@@ -1,0 +1,182 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>StickFight Overlay</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<style>
+  :root {
+    --panel-bg: rgba(18, 20, 26, 0.94);
+    --panel-line: rgba(255, 255, 255, 0.09);
+    --text: #e9edf3;
+    --muted: #9aa4b2;
+    --accent: #ffb020;
+    --btn: rgba(255, 255, 255, 0.07);
+    --btn-hover: rgba(255, 255, 255, 0.14);
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  canvas { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+  canvas.capture { pointer-events: auto; cursor: grab; }
+  canvas.capture.dragging { cursor: grabbing; }
+  canvas.tool { pointer-events: auto; cursor: crosshair; }
+
+  /* ---- side panel ---- */
+  #ui { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 30; display: flex; align-items: center; color: var(--text); font-size: 12px; }
+  #ui.hidden { display: none; }
+  #tab { width: 30px; height: 84px; border: none; border-radius: 10px 0 0 10px; background: var(--panel-bg); color: var(--accent);
+    font-size: 16px; cursor: pointer; box-shadow: -4px 4px 16px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;
+    writing-mode: vertical-rl; letter-spacing: 1px; font-weight: 700; }
+  #tab span { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  #panel { width: 268px; max-height: 92vh; overflow-y: auto; background: var(--panel-bg); border-radius: 12px 0 0 12px; box-shadow: -6px 6px 24px rgba(0,0,0,0.45);
+    padding: 10px 12px 12px; box-sizing: border-box; display: none; scrollbar-width: thin; }
+  #ui.open #panel { display: block; }
+  #ui.open #tab { border-radius: 10px 0 0 10px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  header b { font-size: 14px; letter-spacing: 0.3px; }
+  header b i { color: var(--accent); font-style: normal; }
+  .ver { color: var(--muted); font-size: 11px; margin-left: 6px; font-weight: 400; }
+  h3 { margin: 12px 0 6px; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  button { font: inherit; color: var(--text); background: var(--btn); border: 1px solid var(--panel-line); border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+  button:hover { background: var(--btn-hover); }
+  button.on { background: rgba(255, 176, 32, 0.2); border-color: var(--accent); color: #fff; }
+  .icon { background: none; border: none; color: var(--muted); font-size: 16px; padding: 2px 6px; }
+  .grid { display: grid; gap: 6px; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .tool { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px; }
+  .tool .e { font-size: 18px; line-height: 1; }
+  .seg { display: flex; border: 1px solid var(--panel-line); border-radius: 8px; overflow: hidden; }
+  .seg button { flex: 1; border: none; border-radius: 0; background: transparent; }
+  .seg button.on { background: rgba(255, 176, 32, 0.22); }
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .sw { height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.15); padding: 0; }
+  .sw.used { opacity: 0.25; }
+  .sw.sel { border-color: #fff; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row > * { flex: 1; }
+  select { font: inherit; color: var(--text); background: #262a33; border: 1px solid var(--panel-line); border-radius: 8px; padding: 5px 6px; }
+  label.chk { display: flex; align-items: center; gap: 6px; color: var(--text); cursor: pointer; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .roster { display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow-y: auto; }
+  .fr { display: grid; grid-template-columns: 10px 1fr 52px 18px; gap: 6px; align-items: center; padding: 3px 4px; border-radius: 6px; background: rgba(255,255,255,0.04); }
+  .fr .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .fr .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fr .nm small { color: var(--muted); }
+  .fr .hp { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+  .fr .hp div { height: 100%; background: #3ddc6a; }
+  .fr button { padding: 0 2px; border: none; background: none; color: var(--muted); }
+  .hint { color: var(--muted); font-size: 11px; line-height: 1.45; margin-top: 4px; }
+  #upd-status { color: var(--muted); font-size: 11px; margin-top: 4px; min-height: 14px; }
+  .electron-only { display: none; }
+  body.electron .electron-only { display: block; }
+
+  #toolhint { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 20; display: none;
+    background: rgba(20,20,24,0.9); color: #fff; padding: 8px 14px; border-radius: 10px; font-size: 13px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35); white-space: nowrap; }
+  #toolhint b { color: var(--accent); }
+  #toast { position: fixed; bottom: 60px; right: 20px; z-index: 40; display: none; background: rgba(20,20,24,0.94); color: #fff;
+    padding: 10px 14px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.35); }
+
+  /* Browser demo only: a fake desktop with draggable windows. */
+  body.demo { background: radial-gradient(1200px 700px at 30% 20%, #3a5f8f, #182433 70%); }
+  body.demo #taskbar { position: fixed; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(15,18,24,0.92); }
+  .fakewin { position: fixed; background: #f4f5f7; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); overflow: hidden; }
+  .fakewin .bar { height: 30px; background: #dfe3ea; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: #333; cursor: move; }
+  .fakewin .body { padding: 12px; font-size: 13px; color: #555; line-height: 1.5; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="toolhint"></div>
+<div id="toast"></div>
+
+<div id="ui">
+  <button id="tab" title="StickFight controls">⚔<span>PETS</span></button>
+  <div id="panel">
+    <header>
+      <b><i>Stick</i>Fight<span class="ver" id="ver"></span></b>
+      <button class="icon" id="collapse" title="Collapse">›</button>
+    </header>
+
+    <h3>Animator tools</h3>
+    <div class="grid g3" id="tools">
+      <button class="tool on" data-tool="hand" title="Grab, throw and poke fighters"><span class="e">✋</span>Hand</button>
+      <button class="tool" data-tool="pencil" title="Drag to draw platforms"><span class="e">✏️</span>Pencil</button>
+      <button class="tool" data-tool="eraser" title="Drag over lines to erase them"><span class="e">🧽</span>Eraser</button>
+      <button class="tool" data-tool="bomb" title="Click to drop a bomb"><span class="e">💣</span>Bomb</button>
+      <button class="tool" data-tool="smite" title="Click to strike with lightning"><span class="e">⚡</span>Lightning</button>
+      <button class="tool" data-tool="spawn" title="Click anywhere to spawn a fighter there"><span class="e">✨</span>Spawn</button>
+    </div>
+    <div class="hint" id="tool-desc">Drag a fighter to throw it, click to poke it.</div>
+
+    <h3>Fighters</h3>
+    <div class="swatches" id="swatches"></div>
+    <div class="row" style="margin-top:6px">
+      <select id="arch" title="Fighting style for new fighters">
+        <option value="">Style: default</option>
+        <option>Brawler</option><option>Tactician</option><option>Acrobat</option><option>Zoner</option>
+      </select>
+      <button id="add-rand">+ Random</button>
+    </div>
+    <div class="roster" id="roster" style="margin-top:6px"></div>
+    <div class="row" style="margin-top:6px">
+      <button id="heal">Heal all</button>
+      <button id="clear-all">Remove all</button>
+    </div>
+
+    <h3>Match</h3>
+    <div class="seg" id="mode">
+      <button data-mode="ffa" class="on" title="Everyone for themselves">FFA</button>
+      <button data-mode="teams" title="Red team vs blue team">Teams</button>
+      <button data-mode="peace" title="Pets only, no fighting">Peace</button>
+    </div>
+    <div class="grid g3" style="margin-top:6px">
+      <button id="brawl">Fight now</button>
+      <button id="slowmo">Slow-mo</button>
+      <button id="pause">Pause</button>
+    </div>
+
+    <h3>Settings</h3>
+    <div class="row">
+      <span style="flex:0 0 auto;color:var(--muted)">Size</span>
+      <div class="seg" id="size">
+        <button data-size="small">S</button><button data-size="medium">M</button><button data-size="large">L</button>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <span style="color:var(--muted)">Break between rounds: <b id="rest-val"></b></span>
+      <input type="range" id="rest" min="2" max="30" step="1">
+    </div>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="cinematic"> Cinematic supers (dim screen)</label>
+    <label class="chk" style="margin-top:4px"><input type="checkbox" id="debug"> Show detected window platforms</label>
+    <div class="row" style="margin-top:8px">
+      <button id="clear-lines">Clear drawings</button>
+      <button id="reset-ai">Reset AI memory</button>
+    </div>
+
+    <div class="electron-only">
+      <h3>Updates</h3>
+      <div class="row">
+        <button id="check-upd">Check for updates</button>
+        <label class="chk" style="flex:0 0 auto"><input type="checkbox" id="auto-upd"> Auto</label>
+      </div>
+      <div id="upd-status"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="hide-all">Hide pets</button>
+        <button id="quit">Quit</button>
+      </div>
+    </div>
+    <div class="hint" id="demo-hint"></div>
+  </div>
+</div>
+
+<script src="game/poses.js"></script>
+<script src="game/moves.js"></script>
+<script src="game/ai.js"></script>
+<script src="game/fighter.js"></script>
+<script src="game/world.js"></script>
+<script src="game/render.js"></script>
+<script src="ui.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
