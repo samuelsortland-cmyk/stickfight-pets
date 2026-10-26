@@ -1,6 +1,6 @@
 {
-  "version": "2.2.1",
-  "notes": "UI fixes: Armory clickable in the overlay, cards fit every screen",
+  "version": "3.0.0",
+  "notes": "v3: power indicators, 13 maps, weapon/power ultimates, new UI",
   "files": [
     {
       "path": "main.js",
@@ -16,15 +16,15 @@
     },
     {
       "path": "package.json",
-      "sha256": "eed61437f333b11ac2445eaafcf8ec6dfa6c8b0166ecf52b4bfce4e9734d6c75"
+      "sha256": "1a2016f73acaf8f58da53ef1ae2afcc30b975e96fd60e7f6387e44353a8844a9"
     },
     {
       "path": "README.md",
-      "sha256": "d1ba8505d466d5a963b3a4d0f17d860b840ea1dbc1a5efc96d981e55e5f62cb1"
+      "sha256": "e7278d52a4c6254b8ed6ac85002bf65f8b41957f83162a452dff94101ddc24ee"
     },
     {
       "path": "FIGHTING_DESIGN.md",
-      "sha256": "16ab643699befd9dcad9d7b4bdbcf95760afe659076ea05154e1e2aa97c6edbf"
+      "sha256": "cd117c3726416d87d1264d0703657ce52b9e1bd13ce3821c8ec932fcd1d6a88c"
     },
     {
       "path": "Start StickFight.bat",
@@ -32,19 +32,23 @@
     },
     {
       "path": "src/app.js",
-      "sha256": "09eed834ebdaa733a0af748ee19a96eae85d74322bf211a9b7fdfd3acc456fe6"
+      "sha256": "d10e1dde4855702917ed2877f9cd366095e953873b6d2a8d25050814a92467db"
     },
     {
       "path": "src/game/ai.js",
-      "sha256": "59c039be29f632ee0c6a10747e3d8c206c69d6537a5513d232cf64d9d531572b"
+      "sha256": "cb5095682c06407ac5671d54d08c2876fbecc9f43346d0ab168a482384656579"
     },
     {
       "path": "src/game/arsenal.js",
-      "sha256": "25142fdf25b2284fb3fd19dac6ad4ebeab7e187d76b4275336707a35d375b3f9"
+      "sha256": "7271f727a10dcdfdaba476432e1d08e6f2c71cd48d91951824087329179c3175"
     },
     {
       "path": "src/game/fighter.js",
-      "sha256": "1d78ec83ba8defbc62ce965d269286e90fa2a02915c25a32d3e705a403fe0d4a"
+      "sha256": "8be36bc69c48cfd62f828597336fa1935a94cec2961f4ae55c6478aed33b55f6"
+    },
+    {
+      "path": "src/game/maps.js",
+      "sha256": "04faf991e4f5e1baea85d29cddae3faf09a0df6144f3b126a68913af718eb99e"
     },
     {
       "path": "src/game/moves.js",
@@ -56,19 +60,23 @@
     },
     {
       "path": "src/game/render.js",
-      "sha256": "35a0910c17b3ab2839035eb0015cc37e3aa9eff6ab4332f07cbdb09faba243af"
+      "sha256": "aedaf627c91f8f01005ec666c581d59bf97ec1f41f56b744b0aae88d7f028b0f"
+    },
+    {
+      "path": "src/game/ultimates.js",
+      "sha256": "34a240a8a667849fab3d496b5b4d0eddb3308538219c16c1a0f79a3af2d93d06"
     },
     {
       "path": "src/game/world.js",
-      "sha256": "9b4aff00262d62fd1c8517e18ed45ae6adc85a22d922b8787bdd6cda04fac0db"
+      "sha256": "c303a79d6d8d4c4c65ae2deae5dc9af0ff19e1ff21b00b6c00877d5975e99eb9"
     },
     {
       "path": "src/index.html",
-      "sha256": "2e6071cd11c68d3c9da40da9a02d590334cf89f1046678ddf6355a7b25690f08"
+      "sha256": "683b58b0348fa673f3510bcfdb6d251e36e9a0dcd92b8299b39ee8fc3787cf4d"
     },
     {
       "path": "src/ui.js",
-      "sha256": "d9d0f388cab8dfd2842bae1edb06cd407d409672db377b08b6e9f33b66652f61"
+      "sha256": "d33f233287ae1ea66290b704024575a349fd1f124c88da20821240f8fd364dcc"
     },
     {
       "path": "src/windows.js",

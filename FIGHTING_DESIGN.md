@@ -177,6 +177,36 @@ Weapons multiply damage and knockback, wear out, and can be knocked loose.
 
 Powers can hit fighters who are already ragdolling, which is what makes them feel destructive rather than just strong.
 
+## 10. Version 3: ultimates, maps, readable powers
+
+**Ultimates are situational.** A full meter buys one ultimate. Each fighter has up to three:
+- the default **Omni Flurry**,
+- one from its weapon,
+- one from its power.
+
+`chooseUlt` (in `ultimates.js`) scores each against the current situation:
+- **Omni Flurry** scores very high point-blank (nothing beats it when the target is right there and it can't be dodged on reaction), and low otherwise.
+- **Power and weapon ultimates** score for having the target in range, plus more for every extra enemy inside their area. They are penalized when their shape can't connect, such as a horizontal beam against a target on a different level.
+
+A little randomness keeps it from being robotic. In simulation this produced a healthy mix: Omni Flurry about as often as any single power ultimate.
+
+**Ultimate range is deliberately large** (400–2000px), because ultimates are rare and should change the shape of the whole fight. They still telegraph with a wind-up pose, a freeze-frame and the name flashed across the screen, so they read as events.
+
+**Maps change spacing, not just scenery.**
+- One-way platforms, moving platforms and portals give every map vertical play.
+- Jump pads, conveyors, ice, lava and water push fighters around without anyone attacking.
+- Low gravity on the Space Station stretches out juggles.
+- Breakable crates put loot (items, weapons, fruits) into the fight, which the AI then goes for.
+
+During fights the AI occasionally picks a platform near its target and climbs to it, so arenas get used instead of everyone brawling on the floor.
+
+**Powers have to be readable at a glance.** Fighting games make every character's kit visible through silhouette and color. Here, each power adds three cues:
+- gloves in the power's two colors,
+- a signature ambient effect,
+- a small name tag.
+
+That way you can tell who is about to throw a meteor before they do it.
+
 ## Sources
 
 - Dustloop, "Using Frame Data": https://dustloop.com/w/Using_Frame_Data

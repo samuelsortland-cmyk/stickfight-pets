@@ -7,262 +7,316 @@
 <style>
   @font-face { font-family: 'StickPix'; src: url('../assets/stickpix.ttf') format('truetype'); font-display: block; }
   :root {
-    --ink: #0a0a0a;
-    --bg: #17171c;
-    --card: #202027;
-    --raised: #2b2b34;
-    --line: #3a3a46;
-    --text: #ecebe6;
-    --muted: #8b8b99;
+    --bg: rgba(18, 19, 24, 0.94);
+    --bg-solid: #16171c;
+    --card: rgba(255, 255, 255, 0.045);
+    --card-hover: rgba(255, 255, 255, 0.085);
+    --line: rgba(255, 255, 255, 0.09);
+    --line-strong: rgba(255, 255, 255, 0.16);
+    --text: #f2f2f5;
+    --muted: #9a9cab;
+    --faint: #6c6e7c;
     --accent: #ff7a1a;
-    --accent-hi: #ffb15c;
-    --blue: #2f7dff;
-    --red: #ff2a2a;
+    --accent-2: #ff4d6d;
+    --accent-soft: rgba(255, 122, 26, 0.16);
+    --good: #3ddc84;
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none; }
-  body, button, input, select { font-family: 'StickPix', monospace; font-size: 16px; line-height: 1; text-transform: uppercase; -webkit-font-smoothing: none; }
+  body, button, input { font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 13px; color: var(--text); }
   canvas#c { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
   canvas#c.capture { pointer-events: auto; cursor: grab; }
   canvas#c.capture.dragging { cursor: grabbing; }
   canvas#c.tool { pointer-events: auto; cursor: crosshair; }
-  .pix { image-rendering: pixelated; }
+  svg { display: block; }
 
-  /* ---- retro chrome ---- */
-  .frame { background: var(--bg); border: 2px solid var(--ink); box-shadow: inset 0 0 0 2px var(--line), 4px 4px 0 rgba(0,0,0,0.55); }
-  .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--text);
-    background: var(--raised); border: 2px solid var(--ink); box-shadow: inset -2px -2px 0 rgba(0,0,0,0.35), inset 2px 2px 0 rgba(255,255,255,0.08);
-    padding: 7px 10px 6px; cursor: pointer; white-space: nowrap; }
-  .btn:hover { background: #363642; }
-  .btn:active { box-shadow: inset 2px 2px 0 rgba(0,0,0,0.45); transform: translateY(1px); }
-  .btn.on { background: var(--accent); color: var(--ink); box-shadow: inset -2px -2px 0 rgba(0,0,0,0.25), inset 2px 2px 0 rgba(255,255,255,0.35); }
-  .btn.big { width: 100%; padding: 12px; font-size: 24px; background: var(--accent); color: var(--ink); }
-  .btn.big:hover { background: var(--accent-hi); }
-  .btn.ghost { background: transparent; box-shadow: none; border-color: transparent; color: var(--muted); }
-  .btn.ghost:hover { color: var(--text); background: var(--raised); border-color: var(--ink); }
+  button { background: none; border: none; cursor: pointer; padding: 0; color: inherit; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 34px; padding: 0 12px; border-radius: 10px;
+    background: var(--card); border: 1px solid var(--line); font-weight: 600; transition: background .12s, border-color .12s, transform .06s; white-space: nowrap; }
+  .btn:hover { background: var(--card-hover); border-color: var(--line-strong); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: none; color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.danger:hover { border-color: rgba(255, 77, 109, 0.6); color: #ff8fa3; }
+  .btn.small { height: 28px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
+  .row { display: flex; gap: 8px; }
+  .row > .btn { flex: 1; min-width: 0; }
 
-  /* ---- dock ---- */
-  #ui { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 30; color: var(--text); }
+  /* ---- rail ---- */
+  #ui { position: fixed; right: 10px; top: 50%; transform: translateY(-50%); z-index: 30; }
   #ui.hidden { display: none; }
-  #dock { width: 60px; padding: 6px; display: flex; flex-direction: column; gap: 6px; align-items: center; border-right: none; }
-  #dock .logo { width: 44px; height: 30px; display: flex; align-items: center; justify-content: center; border-bottom: 2px solid var(--line); margin-bottom: 2px; padding-bottom: 4px; }
-  #dock .dbtn { width: 44px; height: 44px; padding: 0; }
-  #dock .dbtn[data-fly].on { background: var(--raised); box-shadow: inset 0 0 0 2px var(--accent); }
-  #dock .sep { width: 36px; height: 2px; background: var(--line); margin: 2px 0; }
-  #dock .dbtn .dot { position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; background: var(--accent); border: 1px solid var(--ink); display: none; }
-  #dock .dbtn .dot.show { display: block; }
-  #tab { position: fixed; right: 0; top: 50%; transform: translateY(-50%); width: 34px; height: 96px; padding: 0; display: none; z-index: 30;
-    flex-direction: column; gap: 8px; border-right: none; border-left: 4px solid var(--accent); }
-  #tab .vt { writing-mode: vertical-rl; color: var(--accent); font-size: 16px; letter-spacing: 2px; }
-  #ui.mini #dock, #ui.mini .fly { display: none !important; }
-  #ui.mini + #tab, body.mini #tab { display: flex; }
+  #rail { width: 68px; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); backdrop-filter: blur(14px); }
+  #rail .brand { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+  #rail .sep { width: 36px; height: 1px; background: var(--line); margin: 6px 0; flex: none; }
+  .rb { position: relative; width: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); transition: background .12s, color .12s; flex: none; }
+  .rb.tool { height: 40px; }
+  .rb.sec { height: 52px; }
+  .rb .lbl { font-size: 10px; font-weight: 600; letter-spacing: .2px; }
+  .rb:hover { background: var(--card-hover); color: var(--text); }
+  .rb.on { background: var(--accent-soft); color: var(--accent); }
+  .rb.tool.on { background: var(--accent); color: #fff; }
+  .rb .tip { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); background: var(--bg-solid); border: 1px solid var(--line-strong); color: var(--text);
+    padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .1s; box-shadow: var(--shadow); }
+  .rb:hover .tip { opacity: 1; }
+  #ui.panelopen .rb.sec:hover .tip { opacity: 0; }
+  #ui.mini #rail, #ui.mini .panel { display: none !important; }
+  #tab { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 30; display: none; width: 30px; height: 120px; border-radius: 12px 0 0 12px;
+    background: var(--bg); border: 1px solid var(--line); border-right: none; box-shadow: var(--shadow); color: var(--accent); flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+  #tab span:last-child { writing-mode: vertical-rl; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); }
+  body.mini #tab { display: flex; }
 
-  .tip { position: absolute; right: 64px; top: 50%; transform: translateY(-50%); background: var(--ink); color: var(--text); padding: 6px 8px 5px;
-    white-space: nowrap; pointer-events: none; display: none; border-left: 4px solid var(--accent); }
-  .dbtn:hover .tip { display: block; }
-  #ui.flyopen .dbtn:hover .tip { display: none; }
+  /* ---- panels ---- */
+  .panel { position: absolute; right: 80px; top: 0; width: 360px; display: none; flex-direction: column; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 18px; box-shadow: var(--shadow); backdrop-filter: blur(14px); overflow: hidden; }
+  .panel.open { display: flex; }
+  .ph { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px 16px; border-bottom: 1px solid var(--line); flex: none; }
+  .ph .ic { width: 32px; height: 32px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
+  .ph h2 { margin: 0; font-size: 15px; font-weight: 700; }
+  .ph .sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
+  .ph .x { margin-left: auto; width: 28px; height: 28px; border-radius: 8px; color: var(--muted); display: flex; align-items: center; justify-content: center; flex: none; }
+  .ph .x:hover { background: var(--card-hover); color: var(--text); }
+  .pb { padding: 14px 16px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+  .sec-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--faint); display: flex; justify-content: space-between; gap: 8px; }
+  .sec-title span { text-transform: none; letter-spacing: 0; font-weight: 600; }
+  .hint { color: var(--muted); font-size: 12px; line-height: 1.45; }
 
-  /* ---- fly-out cards ---- */
-  /* Cards are placed by JS when opened (next to the dock, clamped on-screen) and never move while open. */
-  .fly { position: absolute; right: 66px; top: 0; width: 300px; max-height: calc(100vh - 24px); overflow-y: auto; display: none; scrollbar-width: thin; scrollbar-color: var(--line) var(--bg); }
-  .fly.open { display: block; }
-  .fly .bar { display: flex; align-items: center; justify-content: space-between; background: var(--ink); color: var(--accent); padding: 8px 8px 7px 10px; }
-  .fly .bar small { color: var(--muted); font-size: 16px; }
-  .fly .body { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-  .label { color: var(--muted); font-size: 16px; display: flex; justify-content: space-between; }
-  .row { display: flex; gap: 6px; }
-  .row > .btn { flex: 1; }
-  .seg { display: flex; }
-  .seg .btn { flex: 1; margin-left: -2px; padding-left: 4px; padding-right: 4px; }
-  .seg .btn:first-child { margin-left: 0; }
+  /* segmented control */
+  .seg { display: flex; padding: 3px; background: rgba(0,0,0,.25); border: 1px solid var(--line); border-radius: 11px; gap: 2px; }
+  .seg button { flex: 1; min-width: 0; height: 30px; border-radius: 8px; color: var(--muted); font-weight: 600; font-size: 12px; }
+  .seg button:hover { color: var(--text); }
+  .seg button.on { background: rgba(255,255,255,.12); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
 
-  .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .slot { position: relative; height: 116px; padding: 4px 4px 14px; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-    background: var(--card); border: 2px solid var(--ink); cursor: pointer; box-shadow: inset 0 0 0 2px #262630; }
-  .slot:hover { box-shadow: inset 0 0 0 2px var(--line); }
-  .slot canvas { width: 64px; height: 72px; }
-  .slot .nm { font-size: 16px; }
-  .slot.empty canvas { opacity: 0.18; filter: grayscale(1); }
-  .slot.empty .nm { color: var(--muted); }
-  .slot .plus { position: absolute; top: 30px; left: 0; right: 0; text-align: center; font-size: 24px; color: var(--muted); display: none; }
-  .slot.empty:hover .plus { display: block; color: var(--accent); }
-  .slot .hp { position: absolute; left: 8px; right: 8px; bottom: 4px; height: 6px; background: #3a1010; border: 2px solid var(--ink); }
-  .slot .hp i { display: block; height: 100%; background: #40e070; }
-  .slot .x { position: absolute; right: 2px; top: 2px; width: 22px; height: 22px; padding: 0; font-size: 16px; display: none; }
-  .slot:not(.empty):hover .x { display: flex; }
-  .slot .lv { position: absolute; left: 6px; top: 6px; color: var(--muted); font-size: 16px; }
-  .slot .team { position: absolute; right: 6px; top: 6px; width: 10px; height: 10px; border: 2px solid var(--ink); }
+  /* toggle row */
+  .tog { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 0; cursor: pointer; }
+  .tog .t { font-weight: 600; }
+  .tog .d { color: var(--muted); font-size: 12px; margin-top: 1px; }
+  .tog .sw { flex: none; width: 38px; height: 22px; border-radius: 22px; background: rgba(255,255,255,.14); position: relative; transition: background .15s; }
+  .tog .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .tog.on .sw { background: var(--good); }
+  .tog.on .sw::after { left: 19px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 4px; background: rgba(255,255,255,.15); outline: none; margin: 10px 0 4px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); cursor: pointer; }
 
-  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 70px; gap: 6px; }
-  /* Same height on every tab (3 rows) so the card never resizes when switching tabs. */
-  #arm-tiles { height: 222px; align-content: start; }
-  .row.fit > .btn { min-width: 0; padding-left: 4px; padding-right: 4px; }
-  .tile { flex-direction: column; height: 70px; min-width: 0; gap: 6px; padding: 6px 2px 5px; }
-  .tile svg { width: 32px; height: 32px; }
-  .detail { background: var(--card); border: 2px solid var(--ink); padding: 8px; height: 84px; overflow: hidden; line-height: 1.35; color: var(--muted); }
-  .detail b { display: block; color: var(--accent); font-weight: normal; margin-bottom: 4px; }
-  .tile.on { background: var(--raised); box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
-  .slot .pw { position: absolute; right: 6px; bottom: 16px; width: 12px; height: 12px; border: 2px solid var(--ink); display: none; }
-  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .mode { flex-direction: column; height: 76px; gap: 8px; }
-  .switch { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 4px 0; }
-  .switch .knob { width: 44px; height: 22px; border: 2px solid var(--ink); background: #2a1a1a; position: relative; }
-  .switch .knob::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: var(--muted); }
-  .switch.on .knob { background: #13361f; }
-  .switch.on .knob::after { left: 24px; background: #40e070; }
-  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; background: var(--ink); border: 2px solid var(--ink); box-shadow: inset 0 0 0 2px var(--line); }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 20px; background: var(--accent); border: 2px solid var(--ink); cursor: pointer; }
-  input[type=range]::-moz-range-thumb { width: 12px; height: 18px; background: var(--accent); border: 2px solid var(--ink); border-radius: 0; cursor: pointer; }
-  .hint { color: var(--muted); line-height: 1.4; }
-  .status { color: var(--muted); min-height: 16px; line-height: 1.3; }
+  /* fighters */
+  .slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .slot { position: relative; height: 92px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 7px; cursor: pointer; transition: background .12s, border-color .12s; }
+  .slot:hover { background: var(--card-hover); }
+  .slot.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .slot canvas { width: 44px; height: 50px; }
+  .slot .nm { font-size: 11px; font-weight: 600; margin-top: 2px; }
+  .slot.empty { border-style: dashed; background: transparent; }
+  .slot.empty canvas { opacity: .22; filter: grayscale(1); }
+  .slot.empty .nm { color: var(--faint); }
+  .slot .plus { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 26px; color: var(--accent); font-weight: 300; }
+  .slot.empty:hover .plus { display: flex; }
+  .slot .hp { position: absolute; left: 8px; right: 8px; top: 7px; height: 3px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .slot .hp i { display: block; height: 100%; background: var(--good); }
+  .slot .badges { position: absolute; left: 6px; right: 6px; top: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .slot .badge { width: 13px; height: 13px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.45); }
+  .editor { border-radius: 14px; background: var(--card); border: 1px solid var(--line); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .editor .top { display: flex; gap: 12px; align-items: center; }
+  .editor .top canvas { width: 54px; height: 62px; background: rgba(0,0,0,.25); border-radius: 10px; flex: none; }
+  .editor .name { font-size: 16px; font-weight: 700; }
+  .editor .meta { color: var(--muted); font-size: 12px; margin-top: 2px; line-height: 1.4; }
+  .editor .lab { font-size: 11px; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: .6px; display: flex; justify-content: space-between; }
+  .editor .lab span { text-transform: none; letter-spacing: 0; color: var(--muted); font-weight: 600; }
+  .pick { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pick button { width: 34px; height: 34px; border-radius: 9px; background: rgba(0,0,0,.25); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; }
+  .pick button:hover { border-color: var(--line-strong); background: var(--card-hover); }
+  .pick button.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: var(--accent-soft); }
+  .pick .none { font-size: 15px; color: var(--muted); }
+
+  /* cards (powers, armory, maps) */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card { text-align: left; border-radius: 12px; background: var(--card); border: 1px solid var(--line); padding: 10px; display: flex; flex-direction: column; gap: 5px; transition: background .12s, border-color .12s; min-width: 0; }
+  .card:hover { background: var(--card-hover); border-color: var(--line-strong); }
+  .card.on { border-color: var(--accent); background: var(--accent-soft); }
+  .card .h { display: flex; align-items: center; gap: 8px; font-weight: 700; min-width: 0; }
+  .card .h svg { flex: none; }
+  .card .d { color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+  .card .u { font-size: 10px; font-weight: 700; letter-spacing: .4px; color: var(--accent); text-transform: uppercase; }
+  .card.map { padding: 6px 6px 8px; }
+  .card.map canvas { width: 100%; height: 58px; border-radius: 8px; background: linear-gradient(#26324f, #121726); }
+  .card.map .h { padding: 0 4px; font-size: 12.5px; }
+  .card.map .d { padding: 0 4px; }
+  .givebar { border-radius: 12px; border: 1px solid var(--accent); background: var(--accent-soft); padding: 10px; display: none; flex-direction: column; gap: 8px; }
+  .givebar.show { display: flex; }
+  .givebar .gt { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .givebar .gt button { margin-left: auto; color: var(--muted); font-weight: 600; font-size: 12px; }
+  .givebar .gt button:hover { color: var(--text); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 6px; border-radius: 20px; background: rgba(0,0,0,.3); border: 1px solid var(--line); font-weight: 600; font-size: 12px; }
+  .chip:hover { border-color: var(--line-strong); background: rgba(0,0,0,.45); }
+  .chip i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+  .chip.all { padding: 0 12px; }
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mode { height: 74px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-weight: 700; color: var(--muted); }
+  .mode:hover { background: var(--card-hover); color: var(--text); }
+  .mode.on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+  .status { color: var(--muted); font-size: 12px; min-height: 16px; }
   .electron-only { display: none !important; }
   body.electron .electron-only { display: flex !important; }
 
-  #toolhint { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 20; display: none; padding: 8px 12px 7px; color: var(--text); white-space: nowrap; }
-  #toolhint b { color: var(--accent); font-weight: normal; }
-  /* Notices sit bottom-centre, away from the dock and cards, and never block clicks. */
-  #toast { position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 40; display: none; padding: 10px 12px 9px; color: var(--text);
-    max-width: 420px; line-height: 1.3; text-align: center; pointer-events: none; }
+  #toolhint { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 20; display: none; padding: 9px 14px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); box-shadow: var(--shadow); white-space: nowrap; font-weight: 600; }
+  #toolhint b { color: var(--accent); }
+  #toolhint kbd { font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,.12); margin: 0 2px; }
+  /* Notices sit bottom-centre, away from the rail and panels, and never block clicks. */
+  #toast { position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 40; display: none; padding: 10px 16px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); box-shadow: var(--shadow); max-width: 440px; text-align: center; pointer-events: none; font-weight: 600; }
+
+  /* Short screens. Must stay after the rules above. */
+  @media (max-height: 760px) {
+    #rail { padding: 6px; gap: 2px; width: 62px; }
+    #rail .brand { width: 34px; height: 34px; margin-bottom: 2px; }
+    #rail .sep { margin: 3px 0; }
+    .rb.tool { height: 34px; }
+    .rb.sec { height: 44px; }
+    .rb .lbl { font-size: 9.5px; }
+    .panel { right: 74px; }
+    .slot { height: 78px; }
+    .slot canvas { width: 38px; height: 43px; }
+    .pb { gap: 10px; padding: 12px; }
+  }
 
   /* Browser demo only: a fake desktop with draggable windows. */
   body.demo { background: radial-gradient(1200px 700px at 30% 20%, #3a5f8f, #182433 70%); }
   body.demo #taskbar { position: fixed; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(15,18,24,0.92); }
-  .fakewin { position: fixed; background: #f4f5f7; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); overflow: hidden;
-    font-family: system-ui, sans-serif; text-transform: none; font-size: 13px; }
-  .fakewin .bar { height: 30px; background: #dfe3ea; display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: #333; cursor: move; }
+  .fakewin { position: fixed; background: #f4f5f7; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); overflow: hidden; color: #333; }
+  .fakewin .bar { height: 30px; background: #dfe3ea; display: flex; align-items: center; padding: 0 10px; font-size: 12px; cursor: move; }
   .fakewin .body { padding: 12px; color: #555; line-height: 1.5; }
-  /* Must stay last so it overrides the rules above. */
-  @media (max-height: 760px) {
-    #dock { width: 52px; gap: 4px; padding: 4px; }
-    #dock .dbtn { width: 38px; height: 38px; }
-    #dock .logo { height: 22px; padding-bottom: 2px; }
-    .fly { right: 58px; }
-    .tip { right: 56px !important; }
-    /* Short screens: portraits only (names are in the tooltip), 4 per row. */
-    .slots { grid-template-columns: repeat(4, 1fr); gap: 4px; }
-    .slot { height: 74px; padding-bottom: 12px; }
-    .slot .nm { display: none; }
-    .slot canvas { width: 40px; height: 45px; }
-    .slot .lv { font-size: 16px; top: 4px; left: 4px; }
-    .fly .body { gap: 8px; padding: 8px; }
-  }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="toolhint" class="frame"></div>
-<div id="toast" class="frame"></div>
+<div id="toolhint"></div>
+<div id="toast"></div>
 
 <div id="ui">
-  <div id="dock" class="frame">
-    <div class="logo" data-icon="logo"></div>
-    <button class="btn dbtn" data-tool="hand"><span data-icon="hand"></span><span class="tip">Hand · grab &amp; throw</span></button>
-    <button class="btn dbtn" data-tool="pencil"><span data-icon="pencil"></span><span class="tip">Pencil · draw platforms</span></button>
-    <button class="btn dbtn" data-tool="eraser"><span data-icon="eraser"></span><span class="tip">Eraser</span></button>
-    <button class="btn dbtn" data-tool="bomb"><span data-icon="bomb"></span><span class="tip">Bomb</span></button>
-    <button class="btn dbtn" data-tool="smite"><span data-icon="bolt"></span><span class="tip">Lightning</span></button>
-    <button class="btn dbtn" data-tool="spawn"><span data-icon="spawn"></span><span class="tip">Spawn · click to drop one</span></button>
+  <nav id="rail">
+    <div class="brand" data-icon="brand"></div>
+    <button class="rb tool" data-tool="hand"><span data-icon="hand"></span><span class="tip">Hand · grab, throw, poke</span></button>
+    <button class="rb tool" data-tool="pencil"><span data-icon="pencil"></span><span class="tip">Pencil · draw platforms</span></button>
+    <button class="rb tool" data-tool="eraser"><span data-icon="eraser"></span><span class="tip">Eraser</span></button>
+    <button class="rb tool" data-tool="bomb"><span data-icon="bomb"></span><span class="tip">Bomb</span></button>
+    <button class="rb tool" data-tool="smite"><span data-icon="bolt"></span><span class="tip">Lightning</span></button>
+    <button class="rb tool" data-tool="spawn"><span data-icon="spawn"></span><span class="tip">Spawn a fighter where you click</span></button>
     <div class="sep"></div>
-    <button class="btn dbtn" data-fly="fighters"><span data-icon="fighter"></span><span class="tip">Fighters</span></button>
-    <button class="btn dbtn" data-fly="armory"><span data-icon="armory"></span><span class="tip">Armory · weapons &amp; powers</span></button>
-    <button class="btn dbtn" data-fly="match"><span data-icon="swords"></span><span class="tip">Match</span></button>
-    <button class="btn dbtn" data-fly="settings"><span data-icon="gear"></span><span class="dot" id="upd-dot"></span><span class="tip">Settings</span></button>
+    <button class="rb sec" data-sec="fighters"><span data-icon="fighter"></span><span class="lbl">Fighters</span><span class="tip">Fighters</span></button>
+    <button class="rb sec" data-sec="powers"><span data-icon="flame"></span><span class="lbl">Powers</span><span class="tip">Powers &amp; ultimates</span></button>
+    <button class="rb sec" data-sec="armory"><span data-icon="sword"></span><span class="lbl">Armory</span><span class="tip">Weapons &amp; items</span></button>
+    <button class="rb sec" data-sec="maps"><span data-icon="map"></span><span class="lbl">Maps</span><span class="tip">Arenas</span></button>
+    <button class="rb sec" data-sec="match"><span data-icon="swords"></span><span class="lbl">Match</span><span class="tip">Match</span></button>
+    <button class="rb sec" data-sec="settings"><span data-icon="gear"></span><span class="lbl">Settings</span><span class="tip">Settings</span></button>
     <div class="sep"></div>
-    <button class="btn dbtn ghost" id="mini"><span data-icon="collapse"></span><span class="tip">Tuck away</span></button>
-  </div>
+    <button class="rb tool" id="mini"><span data-icon="collapse"></span><span class="tip">Tuck away</span></button>
+  </nav>
 
-  <div class="fly frame" id="fly-fighters">
-    <div class="bar">Fighters <small id="count"></small></div>
-    <div class="body">
+  <section class="panel" id="sec-fighters">
+    <div class="ph"><div class="ic" data-icon="fighter"></div><div><h2>Fighters</h2><div class="sub" id="f-sub"></div></div><button class="x" data-close data-icon="close"></button></div>
+    <div class="pb">
       <div class="slots" id="slots"></div>
+      <div class="editor" id="editor"></div>
       <div>
-        <div class="label">New fighters fight like</div>
-        <div class="seg" id="arch" style="margin-top:6px">
-          <button class="btn on" data-arch="" title="Each color's own style">Any</button>
-          <button class="btn" data-arch="Brawler" title="Brawler: all-out aggression">Brw</button>
-          <button class="btn" data-arch="Tactician" title="Tactician: parries and punishes">Tac</button>
-          <button class="btn" data-arch="Acrobat" title="Acrobat: wall jumps and air combos">Acr</button>
-          <button class="btn" data-arch="Zoner" title="Zoner: keeps away with blasts">Zon</button>
+        <div class="sec-title">New fighters fight like</div>
+        <div class="seg" id="arch" style="margin-top:8px">
+          <button class="on" data-arch="">Any</button><button data-arch="Brawler">Brawler</button><button data-arch="Tactician">Tactic</button><button data-arch="Acrobat">Acrobat</button><button data-arch="Zoner">Zoner</button>
         </div>
       </div>
       <div class="row">
         <button class="btn" id="add-rand">+ Random</button>
-        <button class="btn" id="heal">Heal</button>
-        <button class="btn" id="clear-all">Clear</button>
+        <button class="btn" id="heal">Heal all</button>
+        <button class="btn danger" id="clear-all">Remove all</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="fly frame" id="fly-armory">
-    <div class="bar">Armory <small id="arm-count"></small></div>
-    <div class="body">
-      <div class="seg" id="arm-tabs">
-        <button class="btn on" data-cat="weapons">Weapons</button><button class="btn" data-cat="items">Items</button><button class="btn" data-cat="powers">Powers</button>
-      </div>
-      <div class="tiles" id="arm-tiles"></div>
-      <div class="detail" id="arm-detail"><b id="arm-name">Pick something</b><span id="arm-desc">Then click a fighter to give it, or anywhere to drop it.</span></div>
-      <div class="row fit">
-        <button class="btn" id="arm-rain" title="Drop 8 random items from the sky">Rain</button>
-        <button class="btn" id="arm-clear" title="Remove all items on screen">Clear</button>
-        <button class="btn" id="arm-strip" title="Remove every fighter's power">Unpower</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="fly frame" id="fly-match">
-    <div class="bar">Match <small id="round"></small></div>
-    <div class="body">
-      <div class="modes" id="mode">
-        <button class="btn mode" data-mode="ffa"><span data-icon="swords"></span>FFA</button>
-        <button class="btn mode" data-mode="teams"><span data-icon="teams"></span>Teams</button>
-        <button class="btn mode" data-mode="peace"><span data-icon="heart"></span>Peace</button>
-      </div>
-      <button class="btn big" id="brawl">Fight!</button>
-      <div class="switch" id="slowmo"><span>Slow-mo</span><span class="knob"></span></div>
-      <div class="switch" id="pause"><span>Pause</span><span class="knob"></span></div>
-    </div>
-  </div>
-
-  <div class="fly frame" id="fly-settings">
-    <div class="bar">Settings <small id="ver"></small></div>
-    <div class="body">
-      <div>
-        <div class="label">Fighter size</div>
-        <div class="seg" id="size" style="margin-top:6px">
-          <button class="btn" data-size="small">S</button><button class="btn" data-size="medium">M</button><button class="btn" data-size="large">L</button>
-        </div>
-      </div>
-      <div>
-        <div class="label">Pixel size</div>
-        <div class="seg" id="pixel" style="margin-top:6px">
-          <button class="btn" data-px="1" title="High resolution">Fine</button><button class="btn" data-px="2">Classic</button><button class="btn" data-px="3">Chunky</button>
-        </div>
-      </div>
-      <div>
-        <div class="label"><span>Break between rounds</span><span id="rest-val"></span></div>
-        <input type="range" id="rest" min="1" max="20" step="1" style="margin-top:8px">
-      </div>
-      <div class="switch" id="cinematic"><span>Cinematic supers</span><span class="knob"></span></div>
-      <div class="switch" id="debug"><span>Show platforms</span><span class="knob"></span></div>
+  <section class="panel" id="sec-powers">
+    <div class="ph"><div class="ic" data-icon="flame"></div><div><h2>Powers</h2><div class="sub">Each fruit grants a power and an ultimate</div></div><button class="x" data-close data-icon="close"></button></div>
+    <div class="pb">
+      <div class="givebar" id="give-powers"></div>
+      <div class="cards" id="power-cards"></div>
       <div class="row">
-        <button class="btn" id="clear-lines">Clear lines</button>
-        <button class="btn" id="reset-ai">Reset AI</button>
+        <button class="btn" id="pow-random">Random for all</button>
+        <button class="btn danger" id="pow-strip">Remove all</button>
       </div>
-      <div class="electron-only" style="flex-direction:column;gap:8px">
-        <div class="label">Updates</div>
-        <div class="switch" id="auto-upd"><span>Auto update</span><span class="knob"></span></div>
-        <button class="btn" id="check-upd">Check now</button>
+    </div>
+  </section>
+
+  <section class="panel" id="sec-armory">
+    <div class="ph"><div class="ic" data-icon="sword"></div><div><h2>Armory</h2><div class="sub" id="arm-sub">Weapons and items</div></div><button class="x" data-close data-icon="close"></button></div>
+    <div class="pb">
+      <div class="givebar" id="give-armory"></div>
+      <div class="sec-title">Weapons <span>each has its own ultimate</span></div>
+      <div class="cards" id="weapon-cards"></div>
+      <div class="sec-title">Items</div>
+      <div class="cards" id="item-cards"></div>
+      <div class="row">
+        <button class="btn" id="arm-rain">Item rain</button>
+        <button class="btn" id="arm-clear">Clear items</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="sec-maps">
+    <div class="ph"><div class="ic" data-icon="map"></div><div><h2>Maps</h2><div class="sub" id="map-sub"></div></div><button class="x" data-close data-icon="close"></button></div>
+    <div class="pb">
+      <div class="cards" id="map-cards"></div>
+      <div class="tog" id="use-windows"><div><div class="t">Windows as platforms</div><div class="d">Fighters can also stand on your open windows</div></div><div class="sw"></div></div>
+    </div>
+  </section>
+
+  <section class="panel" id="sec-match">
+    <div class="ph"><div class="ic" data-icon="swords"></div><div><h2>Match</h2><div class="sub" id="round"></div></div><button class="x" data-close data-icon="close"></button></div>
+    <div class="pb">
+      <div class="modes" id="mode">
+        <button class="mode" data-mode="ffa"><span data-icon="swords"></span>Free-for-all</button>
+        <button class="mode" data-mode="teams"><span data-icon="teams"></span>Teams</button>
+        <button class="mode" data-mode="peace"><span data-icon="heart"></span>Peace</button>
+      </div>
+      <button class="btn primary" id="brawl" style="height:42px;font-size:14px">Fight now</button>
+      <div class="tog" id="slowmo"><div><div class="t">Slow motion</div></div><div class="sw"></div></div>
+      <div class="tog" id="pause"><div><div class="t">Pause</div></div><div class="sw"></div></div>
+      <div>
+        <div class="sec-title">Break between rounds <span id="rest-val"></span></div>
+        <input type="range" id="rest" min="1" max="20" step="1">
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="sec-settings">
+    <div class="ph"><div class="ic" data-icon="gear"></div><div><h2>Settings</h2><div class="sub" id="ver"></div></div><button class="x" data-close data-icon="close"></button></div>
+    <div class="pb">
+      <div>
+        <div class="sec-title">Fighter size</div>
+        <div class="seg" id="size" style="margin-top:8px"><button data-size="small">Small</button><button data-size="medium">Medium</button><button data-size="large">Large</button></div>
+      </div>
+      <div>
+        <div class="sec-title">Pixel style</div>
+        <div class="seg" id="pixel" style="margin-top:8px"><button data-px="1">Fine</button><button data-px="2">Classic</button><button data-px="3">Chunky</button></div>
+      </div>
+      <div class="tog" id="power-tags"><div><div class="t">Power name tags</div><div class="d">Show each fighter's power above its head</div></div><div class="sw"></div></div>
+      <div class="tog" id="cinematic"><div><div class="t">Cinematic ultimates</div><div class="d">Dim the screen during ultimates</div></div><div class="sw"></div></div>
+      <div class="tog" id="debug"><div><div class="t">Show detected platforms</div></div><div class="sw"></div></div>
+      <div class="row">
+        <button class="btn" id="clear-lines">Clear drawings</button>
+        <button class="btn" id="reset-ai">Reset AI memory</button>
+      </div>
+      <div class="electron-only" style="flex-direction:column;gap:10px">
+        <div class="sec-title">Updates</div>
+        <div class="tog" id="auto-upd"><div><div class="t">Update automatically</div></div><div class="sw"></div></div>
+        <div class="row"><button class="btn" id="check-upd">Check for updates</button></div>
         <div class="status" id="upd-status"></div>
         <div class="row">
           <button class="btn" id="hide-all">Hide pets</button>
-          <button class="btn" id="quit">Quit</button>
+          <button class="btn danger" id="quit">Quit</button>
         </div>
       </div>
       <div class="hint" id="demo-hint"></div>
     </div>
-  </div>
+  </section>
 </div>
-<button class="btn" id="tab" title="Show StickFight tools"><span data-icon="expand"></span><span class="vt">Tools</span></button>
+<button id="tab" title="Show StickFight"><span data-icon="expand"></span><span>STICKFIGHT</span></button>
 
 <script src="game/poses.js"></script>
 <script src="game/moves.js"></script>
@@ -271,6 +325,8 @@
 <script src="game/world.js"></script>
 <script src="game/render.js"></script>
 <script src="game/arsenal.js"></script>
+<script src="game/maps.js"></script>
+<script src="game/ultimates.js"></script>
 <script src="ui.js"></script>
 <script src="app.js"></script>
 </body>

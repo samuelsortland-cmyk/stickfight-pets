@@ -130,6 +130,7 @@ function drawFighter(ctx, f, w) {
   }
   const flash = f.flash > 0;
   drawBody(ctx, f.pts, f.S, flash ? '#ffffff' : f.color, flash ? '#dddddd' : f.dark, INK, f.rim);
+  if (f.ability && w.impactT <= 0) drawPowerMarks(ctx, f, w);
   drawWeapon(ctx, f, w);
   if (f.state === 'frozen') drawIceBlock(ctx, f);
   if (f.state === 'ko') {
@@ -199,6 +200,11 @@ function drawHud(ctx, f, w, hover) {
       ctx.fillRect(snap(head.x - tw - 4 * T), snap(y - 6 * T), 3 * T, 3 * T);
     }
     y -= hover || !showBars ? 11 * T : 2 * T;
+  }
+  if (f.ability && w.powerTags && f.state !== 'ko') {
+    // Power tag: always visible so you can tell who has which power.
+    ptext(ctx, ABILITIES[f.ability].name, head.x, y, 8, ABILITIES[f.ability].color);
+    y -= 10 * T;
   }
   if (f.bubble) {
     const tw = ptextWidth(f.bubble.text, 8);
@@ -402,6 +408,11 @@ function drawProjectiles(ctx, w) {
   for (const p of w.projectiles) {
     if (p.kind === 'bullet') {
       ctx.lineCap = 'square';
+      if (p.big) {
+        ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 2 * T, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#ffe14d'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 0.45, 0, TAU); ctx.fill();
+      }
       ctx.strokeStyle = INK; ctx.lineWidth = 3 * T;
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 1.6, p.y); ctx.stroke();
       ctx.strokeStyle = '#ffe14d'; ctx.lineWidth = T;
@@ -481,6 +492,7 @@ function dirtyBox(w, scale) {
   for (const p of w.projectiles) add(p.x, p.y, 60);
   for (const it of w.items) add(it.x, it.y - 20, 50);
   if (w.hazards.length) { add(0, 0, 0); add(w.width, w.height, 0); }
+  if (w.map) { add(w.left, w.floorY - MAP_H * w.S - 140 * w.S, 0); add(w.right, w.floorY + 10, 0); }
   if (w.banners.length) add(w.width / 2, Math.max(80, w.height * 0.22) + 40, Math.max(w.width / 2, 200));
   if (x0 === Infinity) return null;
   return [x0 * scale, y0 * scale, x1 * scale, y1 * scale];
@@ -506,6 +518,7 @@ function render(ctx, w, view) {
   // Shake in whole art pixels so the grid never smears.
   L.setTransform(scale, 0, 0, scale, Math.round(rand(-sh, sh) * 0.5 * scale), Math.round(rand(-sh, sh) * 0.5 * scale));
 
+  if (w.map) drawMapBack(L, w, w.map, w.map.t);
   drawDecals(L, w);
   for (const d of w.drawn) {
     const left = d.life - d.t;
@@ -537,8 +550,8 @@ function render(ctx, w, view) {
   }
   L.globalAlpha = 1;
 
-  const box = dirtyBox(w, scale);
-  if (box) crispen(box);
+  // Sharpening only matters on the coarse pixel styles; at full resolution it's wasted work.
+  if (U > 1.01) { const box = dirtyBox(w, scale); if (box) crispen(box); }
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(layer, 0, 0, layer.width * dev, layer.height * dev);
 

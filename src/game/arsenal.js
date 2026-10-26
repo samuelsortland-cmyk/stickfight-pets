@@ -103,6 +103,7 @@ function blast(w, x, y, R, dmg, f, color = '#ffb347') {
   w.impact(x, y, 1, 16, color);
   w.impact(x, y, -1, 16, color);
   w.dust(x, y, 14);
+  damageCratesNear(w, x, y, R);
   w.shake = Math.max(w.shake, Math.min(30, R / S / 6));
   w.impactT = Math.max(w.impactT, 2);
   const gy = groundBelow(w, x, y);
@@ -302,50 +303,7 @@ const ABILITIES = {
     fire(f, w, o) {
       const S = w.S;
       const x = o ? o.x : f.x + f.facing * 200 * S, y = (o ? o.y : f.y) - 50 * S;
-      w.hazards.push({
-        x, y, R: 150 * S, life: 160, max: 160, owner: f, spin: 0,
-        update(w) {
-          this.life--; this.spin += 0.18;
-          for (const d of w.fighters) {
-            if (d === this.owner || (w.phase === 'fight' && !w.isEnemy(this.owner, d))) continue;
-            const dx = this.x - d.pts.hip.x, dy = this.y - d.pts.hip.y, dist = Math.hypot(dx, dy);
-            if (dist > this.R * 1.3 || d.state === 'held') continue;
-            const pull = 0.9 * S * (1 - dist / (this.R * 1.3)) + 0.2 * S;
-            if (d.rag) for (const p of d.rag.p) { p.ox -= (dx / (dist || 1)) * pull; p.oy -= (dy / (dist || 1)) * pull + 0.4 * S; }
-            else if (dist > 18 * S) { d.vx += (dx / dist) * pull; if (dist < this.R * 0.7 && d.onGround) { d.vy = -3 * S; d.onGround = false; d.plat = null; d.setState('air'); } }
-            if (this.life % 16 === 0 && dist < this.R * 0.6) hurt(w, this.owner, d, 2.5, 0, 0, { stun: 12 });
-          }
-          for (const it of w.items) { const dx = this.x - it.x, dy = this.y - it.y, dist = Math.hypot(dx, dy) || 1; if (dist < this.R) { it.vx += dx / dist * 0.6 * S; it.vy += dy / dist * 0.6 * S; it.onGround = false; } }
-          if (w.tick % 2 === 0) {
-            const a = rand(0, TAU), d = this.R * rand(0.8, 1.2);
-            w.fx.push({ type: 'charge', x: this.x + Math.cos(a) * d, y: this.y + Math.sin(a) * d, tx: this, life: 14, max: 14, color: chance(0.5) ? '#7a2bff' : '#c9a6ff' });
-          }
-          breakDrawn(w, this.x, this.y, this.R * 0.4);
-          if (this.life <= 0) {
-            this.dead = true;
-            blast(w, this.x, this.y, 170 * S, 16, this.owner, '#7a2bff');
-            w.impactT = 4;
-          }
-        },
-        draw(ctx, w) {
-          const k = Math.min(1, (this.max - this.life) / 20) * (this.life < 10 ? this.life / 10 : 1);
-          const r = this.R * 0.45 * k;
-          ctx.fillStyle = 'rgba(122,43,255,0.35)';
-          ctx.beginPath(); ctx.arc(this.x, this.y, r * 1.9, 0, TAU); ctx.fill();
-          ctx.strokeStyle = '#7a2bff'; ctx.lineWidth = 4 * T;
-          for (let i = 0; i < 4; i++) {
-            ctx.beginPath();
-            for (let s = 0; s <= 20; s++) {
-              const a = this.spin + i * TAU / 4 + s * 0.22, d = r * 1.8 * (1 - s / 20);
-              const px = this.x + Math.cos(a) * d, py = this.y + Math.sin(a) * d * 0.8;
-              if (s) ctx.lineTo(px, py); else ctx.moveTo(px, py);
-            }
-            ctx.stroke();
-          }
-          ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, TAU); ctx.fill();
-          ctx.strokeStyle = '#c9a6ff'; ctx.lineWidth = 2 * T; ctx.stroke();
-        },
-      });
+      blackHole(f, w, x, y, {});
     },
   },
 
@@ -458,47 +416,102 @@ const ABILITIES = {
     fire(f, w) {
       const S = w.S;
       w.text(f.pts.head.x, f.pts.head.y - 34 * S, this.call2, '#59c8ff', 24);
-      w.hazards.push({
-        owner: f, life: 56, max: 56, w: 24 * S, hits: new Map(),
-        update(w) {
-          const g = this.owner;
-          if (g.state !== 'cast' || g.hp <= 0) { this.dead = true; return; }
-          this.life--;
-          if (this.life <= 0) { this.dead = true; return; }
-          const dir = g.facing;
-          this.x0 = (g.pts.h1.x + g.pts.h2.x) / 2 + dir * 6 * S;
-          this.y0 = (g.pts.h1.y + g.pts.h2.y) / 2;
-          this.x1 = dir > 0 ? w.right : w.left;
-          w.shake = Math.max(w.shake, 5);
-          for (const d of w.fighters) {
-            if (d === g) continue;
-            const hx = d.pts.hip.x;
-            if ((hx - this.x0) * dir < 0 || Math.abs(d.pts.hip.y - 20 * S - this.y0) > this.w + 35 * S) continue;
-            if (w.tick - (this.hits.get(d) || -99) >= 6) {
-              this.hits.set(d, w.tick);
-              if (!hurt(w, g, d, 3.2, dir * 6 * S, -3 * S, { stun: 10 }) && d.rag) for (const p of d.rag.p) p.ox -= dir * 4 * S;
-            }
-          }
-          breakDrawn(w, (this.x0 + this.x1) / 2, this.y0, Math.abs(this.x1 - this.x0) / 2);
-          if (w.tick % 3 === 0) w.dust(this.x1 - dir * 6 * S, this.y0 + rand(-20, 20) * S, 2);
-          if (this.life === 1) addDecal(w, { kind: 'glass', x: this.x1, y: this.y0, r: 70 * S, life: 360, seed: Math.random() });
-        },
-        draw(ctx, w) {
-          if (this.x0 == null) return;
-          const k = Math.min(1, (this.max - this.life) / 5) * Math.min(1, this.life / 8);
-          const wd = this.w * k * (1 + Math.sin(w.tick * 0.9) * 0.08);
-          const x = Math.min(this.x0, this.x1), len = Math.abs(this.x1 - this.x0);
-          for (const [m, c] of [[1.5, INK], [1.3, '#1468ff'], [1.0, '#59c8ff'], [0.55, '#bff0ff'], [0.3, '#ffffff']]) {
-            ctx.fillStyle = c;
-            ctx.fillRect(x, this.y0 - wd * m, len, wd * m * 2);
-            ctx.beginPath(); ctx.arc(this.x0, this.y0, wd * m * 1.3, 0, TAU); ctx.fill();
-          }
-        },
-      });
+      kiBeam(f, w, {});
     },
   },
 };
 const ABILITY_KEYS = Object.keys(ABILITIES);
+
+// Black hole hazard (Dark power and its ultimate).
+function blackHole(f, w, x, y, o) {
+  const S = w.S;
+  w.hazards.push({
+    x, y, R: (o.R || 150) * S, life: o.life || 160, max: o.life || 160, owner: f, spin: 0, pullK: o.pull || 1.3,
+    update(w) {
+      this.life--; this.spin += 0.18;
+      for (const d of w.fighters) {
+        if (d === this.owner || (w.phase === 'fight' && !w.isEnemy(this.owner, d))) continue;
+        const dx = this.x - d.pts.hip.x, dy = this.y - d.pts.hip.y, dist = Math.hypot(dx, dy);
+        if (dist > this.R * this.pullK || d.state === 'held') continue;
+        const pull = 0.9 * S * (1 - dist / (this.R * this.pullK)) + 0.2 * S;
+        if (d.rag) for (const p of d.rag.p) { p.ox -= (dx / (dist || 1)) * pull; p.oy -= (dy / (dist || 1)) * pull + 0.4 * S; }
+        else if (dist > 18 * S) { d.vx += (dx / dist) * pull; if (dist < this.R * 0.7 && d.onGround) { d.vy = -3 * S; d.onGround = false; d.plat = null; d.setState('air'); } }
+        if (this.life % 16 === 0 && dist < this.R * 0.6) hurt(w, this.owner, d, 2.5, 0, 0, { stun: 12 });
+      }
+      for (const it of w.items) { const dx = this.x - it.x, dy = this.y - it.y, dist = Math.hypot(dx, dy) || 1; if (dist < this.R) { it.vx += dx / dist * 0.6 * S; it.vy += dy / dist * 0.6 * S; it.onGround = false; } }
+      if (w.tick % 2 === 0) {
+        const a = rand(0, TAU), d = this.R * rand(0.8, 1.2);
+        w.fx.push({ type: 'charge', x: this.x + Math.cos(a) * d, y: this.y + Math.sin(a) * d, tx: this, life: 14, max: 14, color: chance(0.5) ? '#7a2bff' : '#c9a6ff' });
+      }
+      breakDrawn(w, this.x, this.y, this.R * 0.4);
+      if (this.life <= 0) {
+        this.dead = true;
+        blast(w, this.x, this.y, (o.implode || 170) * S, o.dmg || 16, this.owner, '#7a2bff');
+        w.impactT = 4;
+      }
+    },
+    draw(ctx, w) {
+      const k = Math.min(1, (this.max - this.life) / 20) * (this.life < 10 ? this.life / 10 : 1);
+      const r = this.R * 0.45 * k;
+      ctx.fillStyle = 'rgba(122,43,255,0.35)';
+      ctx.beginPath(); ctx.arc(this.x, this.y, r * 1.9, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#7a2bff'; ctx.lineWidth = 4 * T;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        for (let s = 0; s <= 20; s++) {
+          const a = this.spin + i * TAU / 4 + s * 0.22, d = r * 1.8 * (1 - s / 20);
+          const px = this.x + Math.cos(a) * d, py = this.y + Math.sin(a) * d * 0.8;
+          if (s) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+        }
+        ctx.stroke();
+      }
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#c9a6ff'; ctx.lineWidth = 2 * T; ctx.stroke();
+    },
+  });
+}
+
+// Energy beam hazard locked to the caster's hands (Ki Beam power and its ultimate).
+function kiBeam(f, w, o) {
+  const S = w.S;
+  w.hazards.push({
+    owner: f, life: o.life || 56, max: o.life || 56, w: (o.width || 24) * S, hits: new Map(), dmg: o.dmg || 3.2,
+    update(w) {
+      const g = this.owner;
+      if (g.state !== 'cast' || g.hp <= 0) { this.dead = true; return; }
+      this.life--;
+      if (this.life <= 0) { this.dead = true; return; }
+      const dir = g.facing;
+      this.x0 = (g.pts.h1.x + g.pts.h2.x) / 2 + dir * 6 * S;
+      this.y0 = (g.pts.h1.y + g.pts.h2.y) / 2;
+      this.x1 = dir > 0 ? w.right : w.left;
+      w.shake = Math.max(w.shake, 5);
+      for (const d of w.fighters) {
+        if (d === g) continue;
+        const hx = d.pts.hip.x;
+        if ((hx - this.x0) * dir < 0 || Math.abs(d.pts.hip.y - 20 * S - this.y0) > this.w + 35 * S) continue;
+        if (w.tick - (this.hits.get(d) || -99) >= 6) {
+          this.hits.set(d, w.tick);
+          if (!hurt(w, g, d, this.dmg, dir * 6 * S, -3 * S, { stun: 10 }) && d.rag) for (const p of d.rag.p) p.ox -= dir * 4 * S;
+        }
+      }
+      breakDrawn(w, (this.x0 + this.x1) / 2, this.y0, Math.abs(this.x1 - this.x0) / 2);
+      if (w.tick % 3 === 0) w.dust(this.x1 - dir * 6 * S, this.y0 + rand(-20, 20) * S, 2);
+      if (this.life === 1) addDecal(w, { kind: 'glass', x: this.x1, y: this.y0, r: (o.width ? o.width * 3 : 70) * S, life: 360, seed: Math.random() });
+    },
+    draw(ctx, w) {
+      if (this.x0 == null) return;
+      const k = Math.min(1, (this.max - this.life) / 5) * Math.min(1, this.life / 8);
+      const wd = this.w * k * (1 + Math.sin(w.tick * 0.9) * 0.08);
+      const x = Math.min(this.x0, this.x1), len = Math.abs(this.x1 - this.x0);
+      for (const [m, c] of [[1.5, INK], [1.3, '#1468ff'], [1.0, '#59c8ff'], [0.55, '#bff0ff'], [0.3, '#ffffff']]) {
+        ctx.fillStyle = c;
+        ctx.fillRect(x, this.y0 - wd * m, len, wd * m * 2);
+        ctx.beginPath(); ctx.arc(this.x0, this.y0, wd * m * 1.3, 0, TAU); ctx.fill();
+      }
+    },
+  });
+}
 
 // ---- items on the ground -----------------------------------------------------
 
@@ -552,7 +565,7 @@ function giveItem(w, f, kind, o = {}) {
 }
 
 function updateItems(w) {
-  const S = w.S, g = GRAV * S;
+  const S = w.S, g = GRAV * S * w.gravMul;
   for (const it of w.items) {
     it.t++;
     if (!it.fuse && it.t > 3600) it.dead = true; // unclaimed items vanish after a minute
@@ -620,9 +633,55 @@ function updateArsenal(w) {
   updateItems(w);
   updateHazards(w);
   for (const f of w.fighters) {
+    if (f.ability && !f.rag && f.hp > 0 && (w.tick + f.id * 3) % 7 === 0) powerAmbience(w, f);
     if (f.giantT > 0 && w.tick % 3 === 0 && !f.rag) {
       w.fx.push({ type: 'star', x: f.pts.head.x + rand(-30, 30) * f.S, y: f.pts.head.y + rand(-30, 40) * f.S, r: rand(4, 7) * f.S, life: 16, max: 16, E: { main: '#ffd21a', hot: '#fff4b0' } });
     }
+  }
+}
+
+// Constant per-power particles so you can tell who has what at a glance.
+function powerAmbience(w, f) {
+  const S = f.S, P = f.pts, hand = chance(0.5) ? P.h1 : P.h2;
+  switch (f.ability) {
+    case 'flame': w.fx.push({ type: 'flame', x: hand.x, y: hand.y, vx: rand(-0.3, 0.3) * S, vy: rand(-1.6, -0.8) * S, r: rand(2.5, 4) * S, life: 14, max: 14, E: ELEMENTS.fire }); break;
+    case 'ice': w.fx.push({ type: 'sq', x: hand.x + rand(-6, 6) * S, y: hand.y, vx: 0, vy: 0.4 * S, size: 3 * S, life: 18, max: 18, color: chance(0.5) ? '#bfefff' : '#ffffff' }); break;
+    case 'light': w.fx.push({ type: 'star', x: hand.x + rand(-8, 8) * S, y: hand.y + rand(-8, 8) * S, r: 4 * S, life: 12, max: 12, E: { main: '#ffe95a', hot: '#ffffff' } }); break;
+    case 'quake': if (w.tick % 28 < 7) w.fx.push({ type: 'ring', x: hand.x, y: hand.y, life: 14, max: 14, r: 14 * S, color: '#ffffff' }); break;
+    case 'dark': w.fx.push({ type: 'flame', x: P.hip.x + rand(-10, 10) * S, y: P.hip.y + rand(-30, 10) * S, vx: 0, vy: -0.8 * S, r: rand(3, 5) * S, life: 18, max: 18, E: { core: '#c9a6ff', hot: '#7a2bff', main: '#3a0a7a', dark: '#120024' } }); break;
+    case 'rumble': w.fx.push({ type: 'zap', pts: jagged(hand.x, hand.y, rand(0, TAU), rand(8, 14) * S, 3), life: 4, max: 4, E: ELEMENTS.volt }); break;
+    case 'gravity': w.fx.push({ type: 'sq', x: P.head.x + rand(-16, 16) * S, y: P.head.y - 18 * S, vx: 0, vy: -0.3 * S, size: 3.5 * S, life: 14, max: 14, color: '#b05cff' }); break;
+    case 'buddha': w.fx.push({ type: 'star', x: P.head.x + rand(-14, 14) * S, y: P.head.y - 20 * S, r: 3 * S, life: 12, max: 12, E: { main: '#ffd21a', hot: '#fff4b0' } }); break;
+    case 'ki': w.fx.push({ type: 'charge', x: hand.x + rand(-14, 14) * S, y: hand.y + rand(-14, 14) * S, tx: hand, life: 8, max: 8, color: '#59c8ff' }); break;
+  }
+}
+
+// Power marks drawn on the body: glowing "gloves" in the power's colors, plus a
+// signature touch (halo, orbiting rocks, ...).
+function drawPowerMarks(ctx, f, w) {
+  const ab = ABILITIES[f.ability];
+  if (!ab || f.state === 'ko') return;
+  const S = f.S, P = f.pts, r = Math.max(2 * U, BODY.limb * S * 0.72);
+  const pulse = 1 + Math.sin(w.tick * 0.15 + f.id) * 0.12;
+  for (const h of [P.h1, P.h2]) {
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(h.x, h.y, r * pulse + Math.max(U, 2 * S), 0, TAU); ctx.fill();
+    ctx.fillStyle = ab.color; ctx.beginPath(); ctx.arc(h.x, h.y, r * pulse, 0, TAU); ctx.fill();
+    ctx.fillStyle = ab.color2; ctx.beginPath(); ctx.arc(h.x - r * 0.25, h.y - r * 0.25, r * 0.4, 0, TAU); ctx.fill();
+  }
+  const hd = P.head, hr = BODY.headR * S;
+  if (f.ability === 'buddha') {
+    ctx.strokeStyle = '#ffd21a'; ctx.lineWidth = Math.max(U, 2 * S);
+    ctx.beginPath(); ctx.arc(hd.x, hd.y, hr * 1.7, 0, TAU); ctx.stroke();
+  } else if (f.ability === 'gravity') {
+    for (let i = 0; i < 2; i++) {
+      const a = w.tick * 0.08 + i * Math.PI;
+      const x = hd.x + Math.cos(a) * hr * 2, y = hd.y + Math.sin(a) * hr * 0.7;
+      ctx.fillStyle = INK; ctx.fillRect(x - 4 * S, y - 4 * S, 8 * S, 8 * S);
+      ctx.fillStyle = '#7a5aa8'; ctx.fillRect(x - 3 * S, y - 3 * S, 6 * S, 6 * S);
+    }
+  } else if (f.ability === 'light') {
+    ctx.strokeStyle = '#ffe95a'; ctx.lineWidth = Math.max(U, 1.5 * S);
+    ctx.beginPath(); ctx.arc(hd.x, hd.y, hr + 3 * S, 0, TAU); ctx.stroke();
   }
 }
 
@@ -819,9 +878,9 @@ function drawDecal(ctx, d, k) {
       const x = d.x + ox * (d.h / 50), hh = h * hk;
       ctx.fillStyle = INK;
       ctx.beginPath(); ctx.moveTo(x - 9 * (d.h / 50) - T, d.y); ctx.lineTo(x, d.y - hh - 2 * T); ctx.lineTo(x + 9 * (d.h / 50) + T, d.y); ctx.fill();
-      ctx.fillStyle = '#9fe6ff';
+      ctx.fillStyle = d.rock ? '#7a6a5c' : '#9fe6ff';
       ctx.beginPath(); ctx.moveTo(x - 9 * (d.h / 50), d.y); ctx.lineTo(x, d.y - hh); ctx.lineTo(x + 9 * (d.h / 50), d.y); ctx.fill();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = d.rock ? '#a8968a' : '#ffffff';
       ctx.beginPath(); ctx.moveTo(x - 3 * (d.h / 50), d.y); ctx.lineTo(x, d.y - hh * 0.9); ctx.lineTo(x, d.y); ctx.fill();
     }
   }

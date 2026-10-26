@@ -10,70 +10,98 @@ You need [Node.js](https://nodejs.org) (the LTS version).
 - **Windows:** double-click **`Start StickFight.bat`**. The first run installs everything, which takes a minute.
 - **Any OS:** open a terminal in this folder and run `npm install` once, then `npm start`.
 
-A transparent overlay covers your main monitor. Clicks pass through to your apps everywhere except on the stickmen and the control panel.
+A transparent overlay covers your main monitor. Clicks pass through to your apps everywhere except on the stickmen and the controls.
 
 **Try it without installing:** open `src/index.html` in a browser for a demo desktop with fake windows.
 
-## The tool dock
+## The controls
 
-A retro toolbox sits on the right edge of the screen. Hover a button to see its name. The dock acts as a wall for the fighters, so they wall-jump off it. The **»** button at the bottom tucks it away into a small tab.
+A rail sits on the right edge of the screen. Its edge also works as a wall that fighters can wall-jump off. The **»** at the bottom tucks it away into a small tab. **Ctrl+Alt+Shift+U** brings it back.
 
-**Tools** (top half)
+**Quick tools** (top of the rail)
 
 | Tool | What it does |
 |---|---|
 | Hand | Drag a fighter to dangle and throw it, click one to poke it. A poked pet comes after your cursor |
-| Pencil | Drag to draw platforms (they last a minute) |
-| Eraser | Drag over drawn lines to erase them |
+| Pencil / Eraser | Draw platforms (they last a minute) / erase them |
 | Bomb | Click to blow everyone nearby into the air |
 | Lightning | Click a fighter to smite it |
 | Spawn | Click anywhere to drop a new fighter there |
 
-`Esc` or right-click switches back to the hand. While any other tool is active, the overlay takes your clicks.
+`Esc` or right-click goes back to the hand.
 
-**Cards** (bottom half)
-- **Fighters:** all 12 fighters as portraits. Click an empty slot to add that fighter, and hover a fighter to remove it with ✕. You can pick the fighting style new fighters use, add a random fighter, heal everyone, or clear the screen.
-- **Match:** pick FFA, Teams or Peace, then hit **Fight!** There are also Slow-mo and Pause switches.
-- **Settings:** fighter size, pixel size (Fine is high resolution, Classic and Chunky are blockier), the break between rounds, cinematic supers, showing detected window platforms, clearing drawings, resetting the AI's memory, updates, hiding the pets, and quitting.
+**Sections** (each opens a panel)
 
-**Armory** (sword button): pick a weapon, item or power fruit, then click a fighter to hand it over, or click anywhere to drop it on the ground. Fighters also walk over and grab what they need on their own. The Armory has Weapons, Items and Powers tabs; **Rain** drops 8 random things from the sky, **Clear** removes items on screen and **Unpower** takes every power away.
+- **Fighters:** all 12 fighters as a grid. Click an empty slot to add that fighter, or click a fighter to edit it: its fighting style, power and weapon, plus Heal, Fill ultimate and Remove. Badges show each fighter's power and weapon at a glance.
+- **Powers:** the 9 power fruits, each with its ultimate. Pick one, then click a fighter on screen, pick a fighter from the "Give to" chips, choose **Everyone**, or click empty ground to drop the fruit. There are also **Random for all** and **Remove all** buttons.
+- **Armory:** weapons (each with its own ultimate) and items, given the same way. **Item rain** drops 8 random things from the sky.
+- **Maps:** 13 arenas with live previews, plus **No map**. Toggle whether your own windows also count as platforms.
+- **Match:** Free-for-all / Teams / Peace, **Fight now**, slow motion, pause, and the break between rounds.
+- **Settings:** fighter size, pixel style (Fine is high resolution; Classic and Chunky are blockier), power name tags, cinematic ultimates, showing detected platforms, clearing drawings, resetting the AI's memory, updates, hide, and quit.
 
-| Weapons | What they do |
+### Weapons and items
+
+| Weapon | Moves | Ultimate |
+|---|---|---|
+| Katana | Long slashes, also in the air | **Thousand Cuts**: dashes 440px through everyone in the way, then dozens of slashes land at once |
+| Hammer | Slow ground-cracking smash | **Earthshatter**: a shockwave 400px each way that launches everyone and raises rock spikes |
+| Spear | Longest reach | **Dragon Lance**: a flaming lance thrown across the whole screen, piercing everyone |
+| Blaster | Shoots | **Bullet Storm**: 22 rapid shots in a spread, then one huge round |
+
+Items: **Medkit** heals 45, **Energy** fills the ultimate meter, and fighters lob **Grenades** at enemies. Weapons wear out and get knocked loose by big hits. Fighters go and pick up what they need by themselves.
+
+### Powers and ultimates
+
+Eat a fruit to gain a power, which the AI casts on cooldown. A full meter unlocks an ultimate, and every ultimate has big range.
+
+| Power | Power move | Ultimate |
+|---|---|---|
+| Flame | Fire Fist: exploding fireball | **Flame Emperor**: a giant sun dropped on the target, 290px blast and a field of fire |
+| Ice | Ice Age: freezing spike wave | **Absolute Zero**: freezes every enemy within 430px |
+| Light | Teleport kicks between 3 enemies | **Light Rain**: 20 beams over a 720px area |
+| Quake | Cracks the screen like glass | **World Shaker**: launches everyone within 700px, cracking the screen on both sides |
+| Dark | Black hole | **Black Vortex**: a black hole twice the size that pulls from 660px away |
+| Rumble | Lightning storm | **Raigo**: a giant thunder orb plus chain lightning to every enemy on screen |
+| Gravity | Meteor | **Meteor Shower**: 7 meteors across 800px |
+| Buddha | Golden giant | **Buddha Palm**: a giant golden palm that sweeps 540px |
+| Ki Beam | Kamehameha | **Final Kamehameha**: a beam nearly 3× as wide across the whole screen |
+
+**Choosing an ultimate:** every fighter also keeps the default ultimate, **Omni Flurry** (a 6-hit rush). When the meter fills, the AI picks whichever ultimate fits the moment:
+- Omni Flurry when the target is right in front of it.
+- Its power's ultimate when several enemies are in range or the target is far away.
+- Its weapon's ultimate when that weapon's range lines up.
+
+Ultimates freeze everyone else for a beat and flash their name.
+
+**Telling powers apart:** fighters with a power have glowing gloves in that power's colors, a signature effect (flames from the fists, frost, sparkles, purple smoke, orbiting rocks, a golden halo…) and their power's name above the head. The name tags can be turned off in Settings.
+
+### Maps
+
+13 arenas built along the bottom of the screen. Each uses at most about a quarter of a 1080p screen's height.
+
+| Map | What's special |
 |---|---|
-| Katana | Longer, harder slashes with sweeping trails; also slashes in the air |
-| Hammer | Slow overhead smash that cracks the ground and launches people |
-| Spear | Longest reach in the game, fast thrusts |
-| Blaster | Fires bullets from range |
+| Rooftops | City buildings with lit windows, a steel ledge up high |
+| Floating Isles | Grassy islands drifting up and down |
+| Dojo | Wooden stage, balconies, lanterns |
+| Construction Site | Girders, a crane platform swinging across, breakable crates with loot |
+| Volcano | Lava pool that burns and launches, a rising rock |
+| Frozen Lake | Slippery ice floor and icicle ledges |
+| Trampoline Park | Jump pads that launch fighters sky high |
+| Factory | Conveyor belts and a pumping piston |
+| Temple | Stepped pyramid with torches |
+| Space Station | Low gravity, drifting panels, two portal pairs |
+| Pirate Bay | Two rocking ships, crow's nests, water that splashes you back out |
+| Jungle | Swinging vines and bouncy mushrooms |
+| Neon Arena | A glowing ring between two towers, jump pads |
 
-Weapons wear out (they break with a "BROKE!") and get knocked out of hands by big hits.
-
-| Items | |
-|---|---|
-| Medkit | Heals 45 |
-| Energy | Fills the super meter |
-| Grenade | Fighters lob it at enemies; explodes after a short fuse |
-
-**Power fruits** (Blox Fruits / anime inspired). Eat one to gain a destructive power; the AI casts it on cooldown and calls it out. A colored bar under a fighter's health shows when it's ready.
-
-| Power | Move |
-|---|---|
-| Flame | **Fire Fist**: a giant fireball that explodes and leaves the ground burning |
-| Ice | **Ice Age**: a wave of ice spikes that freezes enemies solid (hit them to shatter the ice) |
-| Light | **Light Speed**: teleports between up to 3 enemies, kicking each one |
-| Quake | **Seaquake**: punches the air so hard the screen cracks |
-| Dark | **Black Hole**: drags everyone in, then implodes |
-| Rumble | **El Thor**: a storm of lightning bolts on every enemy |
-| Gravity | **Meteor**: drops a meteor that leaves a crater |
-| Buddha | **Buddha**: grows into a golden giant for 8 seconds |
-| Ki Beam | **Kamehameha**: charges up and fires a beam across the whole screen |
-
-Powers leave marks: scorch marks, craters, shattered-glass cracks, ice spikes and burning ground. Explosions also break platforms you've drawn. Outside fights, pets with powers show off now and then (no damage, but the screen still gets wrecked). Powers are saved per fighter.
+In fights, fighters chase each other onto the platforms and take the high ground near their target.
 
 **Hotkeys** (Ctrl is Cmd on macOS):
 
 | Keys | Action |
 |---|---|
-| `Ctrl+Alt+Shift+U` | Show / tuck away the dock |
+| `Ctrl+Alt+Shift+U` | Show / tuck away the controls |
 | `Ctrl+Alt+Shift+B` | Fight now |
 | `Ctrl+Alt+Shift+N` | Add a fighter |
 | `Ctrl+Alt+Shift+H` | Hide / show the pets |
@@ -169,9 +197,9 @@ update.json         Where updates come from
 version.json        Update manifest (generated by tools/make-manifest.js)
 Start StickFight.bat  Windows double-click launcher
 src/windows.js      Per-OS desktop window tracker
-src/index.html      Page shell, dock markup and styles
+src/index.html      Page shell, control markup and styles
 assets/stickpix.ttf Pixel font (tools/build-font.py)
-src/ui.js           Tool dock, cards and pixel-art icons
+src/ui.js           Rail, panels, icons, portraits and map thumbnails
 src/app.js          Bootstrap, input, tools, click-through toggling, game loop
 src/game/poses.js   Math, skeleton proportions, pose library, forward kinematics
 src/game/moves.js   Move list with frame data
@@ -179,5 +207,7 @@ src/game/fighter.js State machine, movement, posing, verlet ragdoll
 src/game/ai.js      Fighting AI, learning, pet behaviors
 src/game/world.js   Platforms, hits, clashes, tools, team tactics, effects, rounds
 src/game/render.js  Canvas drawing
-src/game/arsenal.js Weapons, items, power fruits, destruction decals
+src/game/arsenal.js Weapons, items, power fruits, destruction decals, power indicators
+src/game/ultimates.js Weapon and power ultimates, and how the AI picks one
+src/game/maps.js    The 13 maps: platforms, moving parts, pads, conveyors, lava, portals, crates
 ```

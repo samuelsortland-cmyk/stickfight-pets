@@ -27,6 +27,11 @@ class World {
     this.items = [];
     this.hazards = [];
     this.itemId = 0;
+    this.map = null;
+    this.mapKey = null;
+    this.gravMul = 1;
+    this.useWindows = true;
+    this.powerTags = true;
     this.fx = [];
     this.decals = [];
     this.winPlats = [];
@@ -176,7 +181,8 @@ class World {
   }
 
   rebuildPlatforms() {
-    this.platforms = this.winPlats.concat(this.drawn.map((d) => d.plat));
+    const win = this.useWindows === false ? [] : this.winPlats;
+    this.platforms = win.concat(this.drawn.map((d) => d.plat), mapPlats(this));
   }
 
   findLanding(x, y0, y1, ignorePlats) {
@@ -308,6 +314,7 @@ class World {
   // ---- sandbox tools -----------------------------------------------------
   explode(x, y) {
     const S = this.S, R = 120 * S;
+    damageCratesNear(this, x, y, R);
     this.flashFx(x, y, R * 0.6);
     this.burst(x, y, R * 1.4);
     this.ring(x, y, '#ffd23f', R);
@@ -396,6 +403,7 @@ class World {
     if (m.kb && (boost !== 1 || kbB !== 1)) m = Object.assign({}, m, { dmg: m.dmg * boost, kb: [m.kb[0] * kbB, m.kb[1] * kbB] });
     const rad = m.rad * a.S;
     const j = probes[0];
+    hitCrates(this, a, probes, rad);
     for (const d of this.fighters) {
       if (!this.isEnemy(a, d) || a.hitList.has(d) || d.hp <= 0) continue;
       // Clash: both attacks are out and the fists/feet meet.
@@ -561,18 +569,20 @@ class World {
     if (a && a.name) a.learn(a.moveKey, 0.3);
   }
 
-  superFlash(f) {
+  // Ultimate start: everyone else freezes for a dramatic beat and the name flashes up.
+  superFlash(f, name = ULT_DEFAULT.name, color = '#ffffff') {
     const S = this.S;
     this.freezeT = 28;
     this.freezeOwner = f;
     if (this.cinematic) this.dimT = 70;
-    this.ring(f.pts.neck.x, f.pts.neck.y, f.light, 70 * S);
+    this.ring(f.pts.neck.x, f.pts.neck.y, color, 70 * S);
     this.ring(f.pts.neck.x, f.pts.neck.y, '#ffffff', 40 * S);
-    this.burst(f.pts.neck.x, f.pts.neck.y, 150 * S, f.elc.main);
+    this.burst(f.pts.neck.x, f.pts.neck.y, 150 * S, color);
     this.elemFx(f.el, f.pts.neck.x, f.pts.neck.y, f.facing, 16);
     this.elemFx(f.el, f.pts.neck.x, f.pts.neck.y, -f.facing, 16);
-    this.text(f.pts.head.x, f.pts.head.y - 40 * S, 'OMNI FLURRY!', f.light, 24);
-    f.say(pick(['Here goes!', 'Full power!', 'Watch this.', 'HAAAA!']), 60);
+    this.text(f.pts.head.x, f.pts.head.y - 40 * S, f.name, f.light, 16);
+    this.banner(name + '!', 70, color);
+    f.say(pick(['Here goes!', 'Full power!', 'Watch this.', 'HAAAA!', 'Ultimate!']), 60);
   }
 
   shockwave(f) {
@@ -625,6 +635,7 @@ class World {
     for (const p of this.projectiles) {
       p.t++; p.life--;
       p.x += p.vx;
+      if (p.vy) p.y += p.vy;
       p.trail.push({ x: p.x, y: p.y });
       if (p.trail.length > 12) p.trail.shift();
       if (p.x < this.left - 40 || p.x > this.right + 40) p.life = 0;
@@ -1007,6 +1018,7 @@ class World {
       this.updateFx();
       return;
     }
+    updateMap(this);
     this.updateRound();
     this.updateTactics();
     for (const f of this.fighters) aiThink(f, this);

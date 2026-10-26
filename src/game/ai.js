@@ -178,11 +178,10 @@ function combatThink(f, w, inp, ai) {
     }
   }
 
-  // Super when it's likely to land.
-  if (f.meter >= 100 && adx < MOVES.super.reach * S * 0.75 && Math.abs(dy) < 30 * S &&
-      seen.state !== 'block' && chance(0.04 * aggr + (seen.state === 'attack' && seen.phase === 'recovery' ? 0.3 : 0))) {
-    inp.attack = 'super';
-    return;
+  // Ultimate: pick the one that fits (Omni Flurry up close, power/weapon ultimates at range).
+  if (f.meter >= 100 && seen.state !== 'block' && chance(0.05 * aggr + (seen.state === 'attack' && seen.phase === 'recovery' ? 0.3 : 0))) {
+    const key = chooseUlt(f, o, w, adx, dy);
+    if (key && f.useUltimate(key, o)) return;
   }
 
   // Anti-air.
@@ -198,6 +197,17 @@ function combatThink(f, w, inp, ai) {
     } else if (f.meter >= 50 && chance(0.01)) { inp.attack = 'blast'; return; }
   }
   if (f.plat && !f.plat.floor && seen.y > f.y + 45 * S && chance(0.05)) { inp.drop = true; return; }
+
+  // Maps: take the high ground near the target now and then, so fights use the arena.
+  if (w.map && f.onGround) {
+    if (ai.platGoal && (ai.platGoal.dead || f.plat === ai.platGoal || --ai.platT <= 0)) ai.platGoal = null;
+    if (!ai.platGoal && chance(0.008 + 0.01 * A.mobility)) {
+      const cands = w.map.plats.filter((p) => !p.dead && !p.crate && !p.pad && p !== f.plat && f.y - p.y1 < 200 * S && f.y - p.y1 > -10 * S &&
+        Math.abs((p.x1 + p.x2) / 2 - o.x) < 280 * S);
+      if (cands.length) { ai.platGoal = pick(cands); ai.platT = 160; }
+    }
+    if (ai.platGoal && navigateTo(f, ai.platGoal, inp, ai, clamp(o.x, ai.platGoal.x1, ai.platGoal.x2))) return;
+  }
 
   const oDown = o.rag || o.state === 'getup' || o.state === 'grabbed' || o.state === 'held';
   let spacing = (A.spacing + (lowHp ? 35 : 0)) * S;

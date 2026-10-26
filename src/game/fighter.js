@@ -254,11 +254,11 @@ class Fighter {
     if (inp.pet && !inp.move) { this.setState(inp.pet); this.vx *= 0.7; return; }
     if (inp.move) {
       const sp = (inp.run ? RUN : WALK) * S * (inp.speed || 1);
-      this.vx = lerp(this.vx, inp.move * sp, 0.3);
+      this.vx = lerp(this.vx, inp.move * sp, 0.3 * this.traction());
       this.setState(inp.run ? 'run' : 'walk');
       if (inp.run || !inp.face) this.facing = inp.move;
     } else {
-      this.vx *= 0.7;
+      this.vx *= 1 - 0.3 * this.traction();
       this.setState('idle');
     }
   }
@@ -335,7 +335,7 @@ class Fighter {
     if (m.cost) this.meter -= m.cost;
     this.setState('attack', true);
     this.trail.length = 0;
-    if (m.superMove) this.world.superFlash(this);
+    if (m.superMove) this.world.superFlash(this, ULT_DEFAULT.name, this.elc.main);
   }
 
   attackUpdate(inp) {
@@ -406,6 +406,28 @@ class Fighter {
   }
 
   startRoll(dir) { this.rollDir = dir; this.setState('roll', true); }
+
+  // Grip on the ground: ice platforms and frozen floors are slippery.
+  traction() {
+    if (!this.onGround) return 1;
+    return (this.plat && this.plat.ice) || mapIceAt(this.world, this.x, this.y) ? 0.12 : 1;
+  }
+
+  // ---- ultimates ---------------------------------------------------------
+  useUltimate(key, target) {
+    if (this.meter < 100 || !ACTIONABLE.has(this.state) || !this.onGround) return false;
+    if (key === 'flurry') return this.tryAttack('super');
+    const u = ULTS[key];
+    if (!u) return false;
+    this.meter = 0;
+    this.castAb = u;
+    this.castTarget = target || null;
+    this.move = null;
+    if (target) this.facing = sign(target.x - this.x) || this.facing;
+    this.setState('cast', true);
+    this.world.superFlash(this, u.name, u.color);
+    return true;
+  }
 
   // ---- arsenal -----------------------------------------------------------
   useAbility(target) {
@@ -487,7 +509,7 @@ class Fighter {
     const w = this.world, S = this.S;
     const prevY = this.y;
     if (!this.onGround) {
-      let g = GRAV * S;
+      let g = GRAV * S * w.gravMul;
       if (this.state === 'hitstun') g *= 0.8;
       if (this.state === 'attack' && this.move && (this.move.dive || this.move.pound) && this.phase() === 'active') g = 0;
       if (this.adT > 0 || this.state === 'wall') g = 0;
@@ -495,6 +517,7 @@ class Fighter {
     }
     this.x += this.vx;
     this.y += this.vy;
+    if (this.y > w.floorY && this.vy < 0) this.y = w.floorY; // never rise up from under the floor
     const L = w.left + 18 * S, R = w.right - 18 * S; // keep limbs, not just the hip, off the walls
     if (this.x < L || this.x > R) {
       const side = this.x < L ? 1 : -1;
@@ -532,6 +555,15 @@ class Fighter {
 
   land(p) {
     const S = this.S, wasVy = this.vy, w = this.world;
+    if (p.pad && this.state !== 'grabbed') {
+      // Jump pad / mushroom: launch straight back up.
+      this.vy = -p.pad * this.world.S; this.onGround = false; this.plat = null;
+      this.airJumps = 1; this.airDashes = 1; this.airAttacks = 0;
+      if (this.state === 'hitstun' && this.juggled) { this.vy *= 0.7; return; }
+      if (ACTIONABLE.has(this.state) || this.state === 'air' || this.state === 'land' || this.state === 'backflip') { this.setState('air', true); this.flip = 1; }
+      w.ring(this.x, this.y, '#ffd21a', 30 * S); w.dust(this.x, this.y, 4);
+      return;
+    }
     this.onGround = true; this.plat = p; this.vy = 0;
     this.airJumps = 1; this.airAttacks = 0; this.airDashes = 1; this.adT = 0; this.flip = 0;
     this.rot = 0;
@@ -756,7 +788,7 @@ class Fighter {
   }
 
   ragStep() {
-    const r = this.rag, w = this.world, S = this.S, g = GRAV * S;
+    const r = this.rag, w = this.world, S = this.S, g = GRAV * S * w.gravMul;
     r.t++;
     if (r.slamT > 0) r.slamT--;
     const L = w.left, R = w.right, F = w.floorY;
@@ -816,7 +848,10 @@ class Fighter {
     for (const pl of w.platforms) {
       if (p.x < pl.x1 || p.x > pl.x2) continue;
       const yp = pl.yAt(p.x) - rr;
-      if (p.oy <= yp + 1 && p.y > yp) { p.y = yp; p.touch = true; }
+      if (p.oy <= yp + 1 && p.y > yp) {
+        p.y = yp; p.touch = true;
+        if (pl.pad) p.oy = p.y + pl.pad * S * 0.7; // ragdolls bounce off jump pads too
+      }
     }
   }
 

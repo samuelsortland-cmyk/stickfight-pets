@@ -10,7 +10,7 @@
   const api = window.pets || null;
   const SIZES = { small: 84, medium: 118, large: 160 };
   // pixel: CSS pixels per art pixel (1 = fine, high resolution; 2 = classic; 3 = chunky).
-  const DEFAULTS = { size: 'medium', roster: null, match: 'ffa', peace: false, cinematic: true, rest: 3, panelOpen: true, autoUpdate: true, pixel: 1 };
+  const DEFAULTS = { size: 'medium', roster: null, match: 'ffa', peace: false, cinematic: true, rest: 3, panelOpen: true, autoUpdate: true, pixel: 1, map: null, useWindows: true, powerTags: true };
 
   const settings = (() => {
     try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('stickfight.settings'))); }
@@ -23,13 +23,15 @@
     cinematic: settings.cinematic, match: settings.match, restTicks: settings.rest * 60,
   });
   world.peace = !!settings.peace;
+  world.useWindows = settings.useWindows !== false;
+  world.powerTags = settings.powerTags !== false;
   window.__stickfight = world;
 
   const app = {
     world, settings, api, view, tool: 'hand', paused: false, spawnName: null, spawnArch: '',
     save() { try { localStorage.setItem('stickfight.settings', JSON.stringify(settings)); } catch (e) { /* ignore */ } },
     saveRoster() {
-      settings.roster = world.fighters.map((f) => ({ name: f.name, arch: f.archName, ability: f.ability || null }));
+      settings.roster = world.fighters.map((f) => ({ name: f.name, arch: f.archName, ability: f.ability || null, weapon: f.weapon ? f.weapon.kind : null }));
       app.save();
     },
     toast(msg) {
@@ -44,7 +46,7 @@
       world.drawing = null;
       const itemName = (k) => WEAPONS[k] ? WEAPONS[k].name : ABILITIES[k] ? ABILITIES[k].name + ' fruit' : CONSUMABLES[k] ? CONSUMABLES[k].name : '';
       const names = { pencil: 'Pencil', eraser: 'Eraser', bomb: 'Bomb', smite: 'Lightning', spawn: 'Spawn', item: itemName(app.itemKind) };
-      hintEl.innerHTML = t === 'hand' ? '' : `<b>${names[t]}</b> &nbsp;${TOOL_DESC[t]} &nbsp;<b>Esc</b> to stop`;
+      hintEl.innerHTML = t === 'hand' ? '' : `<b>${names[t]}</b> &nbsp;${TOOL_DESC[t]} &nbsp;<kbd>Esc</kbd> or right-click to stop`;
       if (t !== 'item' && app.onItemToolEnd) app.onItemToolEnd();
       hintEl.style.display = t === 'hand' ? 'none' : 'block';
       if (api) api.setToolMode(t !== 'hand');
@@ -63,10 +65,14 @@
   fitCanvas();
 
   if (settings.roster && settings.roster.length) {
-    for (const r of settings.roster) world.addFighter({ name: r.name, arch: r.arch, ability: r.ability });
+    for (const r of settings.roster) {
+      const f = world.addFighter({ name: r.name, arch: r.arch, ability: r.ability });
+      if (f && r.weapon && WEAPONS[r.weapon]) f.weapon = { kind: r.weapon, uses: WEAPONS[r.weapon].uses };
+    }
   } else {
     world.addFighter(); world.addFighter();
   }
+  if (settings.map && MAPS[settings.map]) setWorldMap(world, settings.map);
 
   function command(cmd) {
     switch (cmd) {
@@ -183,7 +189,8 @@
         const target = world.fighterAt(x, y, 18);
         if (target) {
           giveItem(world, target, app.itemKind);
-          if (ABILITIES[app.itemKind]) app.saveRoster();
+          if (ABILITIES[app.itemKind] || WEAPONS[app.itemKind]) app.saveRoster();
+          if (app.onGive) app.onGive();
         } else spawnItem(world, app.itemKind, x, y);
         return;
       }
@@ -213,7 +220,7 @@
   let captured = false;
   // Everything interactive the overlay must stop clicks for. Looked up live so new
   // cards are covered automatically (a hard-coded list once missed the Armory).
-  const HIT_SELECTOR = '#dock, #tab, .fly.open';
+  const HIT_SELECTOR = '#rail, #tab, .panel.open';
   function cursorOverUI() {
     const c = world.cursor;
     if (!c.on || uiEl.classList.contains('hidden')) return false;
@@ -231,7 +238,7 @@
     // Only the dock (or the tucked-away tab) is a wall; open cards float over the scene.
     let inset = 0;
     if (!uiEl.classList.contains('hidden')) {
-      const el = document.getElementById(uiEl.classList.contains('mini') ? 'tab' : 'dock');
+      const el = document.getElementById(uiEl.classList.contains('mini') ? 'tab' : 'rail');
       const r = el.getBoundingClientRect();
       if (r.width) inset = Math.max(0, innerWidth - r.left);
     }
