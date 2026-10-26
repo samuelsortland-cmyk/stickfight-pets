@@ -245,7 +245,15 @@ function setWorldMap(w, key) {
   w.rebuildPlatforms();
   if (w.map) {
     // Drop everyone in from above so nobody ends up inside a building.
-    for (const f of w.fighters) if (!f.rag) { f.y = Math.min(f.y, w.floorY - MAP_H * w.S - 60 * w.S); f.onGround = false; f.plat = null; if (f.state !== 'held') f.setState('air', true); }
+    const top = w.floorY - MAP_H * w.S - 60 * w.S;
+    for (const f of w.fighters) {
+      if (!f.rag) { f.y = Math.min(f.y, top); f.onGround = false; f.plat = null; if (f.state !== 'held') f.setState('air', true); continue; }
+      if (f.rag.pin >= 0) continue; // being held by the cursor
+      // Knocked-out bodies get lifted above the new map too.
+      const dy = Math.min(0, top - Math.max(...f.rag.p.map((q) => q.y)));
+      for (const q of f.rag.p) { q.y += dy; q.oy += dy; q.touch = false; }
+      f.rag.still = 0;
+    }
   }
 }
 

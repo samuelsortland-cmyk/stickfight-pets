@@ -36,7 +36,7 @@ A rail sits on the right edge of the screen. Its edge also works as a wall that 
 - **Powers:** the 9 power fruits, each with its ultimate. Pick one, then click a fighter on screen, pick a fighter from the "Give to" chips, choose **Everyone**, or click empty ground to drop the fruit. There are also **Random for all** and **Remove all** buttons.
 - **Armory:** weapons (each with its own ultimate) and items, given the same way. **Item rain** drops 8 random things from the sky.
 - **Maps:** 13 arenas with live previews, plus **No map**. Toggle whether your own windows also count as platforms.
-- **Match:** Free-for-all / Teams / Peace, **Fight now**, slow motion, pause, and the break between rounds.
+- **Match:** Free-for-all / Teams / Peace, **Fight now**, the map picker, slow motion, pause, and the break between rounds.
 - **Settings:** fighter size, pixel style (Fine is high resolution; Classic and Chunky are blockier), power name tags, cinematic ultimates, showing detected platforms, clearing drawings, resetting the AI's memory, updates, hide, and quit.
 
 ### Weapons and items
@@ -97,6 +97,8 @@ Ultimates freeze everyone else for a beat and flash their name.
 
 In fights, fighters chase each other onto the platforms and take the high ground near their target.
 
+**Picking the next map:** when a match ends, a picker pops up at the top of the screen with every arena. Click one, hit **Random**, or keep the current map. The next round waits for your choice. After about 10 seconds it keeps the current map. Turn the picker off with **Don't ask after matches**, or with the toggle in Match or Maps.
+
 **Hotkeys** (Ctrl is Cmd on macOS):
 
 | Keys | Action |
@@ -109,7 +111,9 @@ In fights, fighters chase each other onto the platforms and take the high ground
 
 ## The look
 
-Everything is drawn on a pixel grid with hard edges, in the style of Animator vs. Animation pixel fan art. By default the grid is fine (one art pixel per screen pixel) for smooth, high-resolution stickmen; switch **Pixel size** to Classic or Chunky in Settings for a blockier look. Text and health bars always stay chunky so they're readable:
+The controls are bright and chunky, like a sandbox game's toolbar: thick outlines, candy-colored buttons, a color for each section and the rounded Fredoka font (`assets/fredoka.ttf`, SIL Open Font License).
+
+The fighters and effects are drawn on a pixel grid with hard edges, in the style of Animator vs. Animation pixel fan art. By default the grid is fine (one art pixel per screen pixel) for smooth, high-resolution stickmen; switch **Pixel size** to Classic or Chunky in Settings for a blockier look. Text and health bars always stay chunky so they're readable:
 - Stickmen have thick black-outlined limbs and hollow ring heads.
 - All text uses a custom 5×7 pixel font (`assets/stickpix.ttf`, built by `tools/build-font.py`).
 

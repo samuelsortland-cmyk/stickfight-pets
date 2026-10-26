@@ -1,6 +1,6 @@
 {
-  "version": "3.0.0",
-  "notes": "v3: power indicators, 13 maps, weapon/power ultimates, new UI",
+  "version": "3.1.0",
+  "notes": "v3.1: bright new UI, pick the next map after each match",
   "files": [
     {
       "path": "main.js",
@@ -16,11 +16,11 @@
     },
     {
       "path": "package.json",
-      "sha256": "1a2016f73acaf8f58da53ef1ae2afcc30b975e96fd60e7f6387e44353a8844a9"
+      "sha256": "292abcff2d26da5932af73fcc33d0ea5ae2cd55bbdc5dfebe3abd8f3c885bed8"
     },
     {
       "path": "README.md",
-      "sha256": "e7278d52a4c6254b8ed6ac85002bf65f8b41957f83162a452dff94101ddc24ee"
+      "sha256": "9d0257f2a99de7d76e7778358b021a39fc949769127b3edf8a158867ab41b331"
     },
     {
       "path": "FIGHTING_DESIGN.md",
@@ -32,7 +32,7 @@
     },
     {
       "path": "src/app.js",
-      "sha256": "d10e1dde4855702917ed2877f9cd366095e953873b6d2a8d25050814a92467db"
+      "sha256": "d9d9c95247e4d8e34380dd89ded2e26578b6649f8182419a2e71ac48c035a200"
     },
     {
       "path": "src/game/ai.js",
@@ -48,7 +48,7 @@
     },
     {
       "path": "src/game/maps.js",
-      "sha256": "04faf991e4f5e1baea85d29cddae3faf09a0df6144f3b126a68913af718eb99e"
+      "sha256": "9baf9d39281cf04d8281fb573b5ccf5f2b400185261d6b424c3d433c3e35c3ff"
     },
     {
       "path": "src/game/moves.js",
@@ -68,19 +68,27 @@
     },
     {
       "path": "src/game/world.js",
-      "sha256": "c303a79d6d8d4c4c65ae2deae5dc9af0ff19e1ff21b00b6c00877d5975e99eb9"
+      "sha256": "e7bc3ed560929aff38bb4ac7203fa6463c3b4a8d5203fd428c2ebded8e3f1017"
     },
     {
       "path": "src/index.html",
-      "sha256": "683b58b0348fa673f3510bcfdb6d251e36e9a0dcd92b8299b39ee8fc3787cf4d"
+      "sha256": "43fb9b0b42754b2a20d0bcf9fc5320936873fe0553a12ecb697acf09f87087a2"
     },
     {
       "path": "src/ui.js",
-      "sha256": "d33f233287ae1ea66290b704024575a349fd1f124c88da20821240f8fd364dcc"
+      "sha256": "a8c79726debf156f472d281c56c304925569222b1224b9df25ca175fe70205cb"
     },
     {
       "path": "src/windows.js",
       "sha256": "f72fd1a2c5b7054b923145fd9e9ad6e7954ec8d5a40ee7ededb26360385f6792"
+    },
+    {
+      "path": "assets/fredoka-OFL.txt",
+      "sha256": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab"
+    },
+    {
+      "path": "assets/fredoka.ttf",
+      "sha256": "2ba02e68b152868aef9ba28e24b3648c7d457fe6f25c761f2c2c53fb61a73fc8"
     },
     {
       "path": "assets/icon.png",

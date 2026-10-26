@@ -30,15 +30,15 @@ const ICON_PATHS = {
   close: 'M18 6 6 18 M6 6l12 12',
 };
 
-function iconSvg(name, size = 20) {
+function iconSvg(name, size = 20, sw = 2) {
   if (name === 'brand') {
-    return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v7M12 15l-4 6M12 15l4 6M6 11h12"/></svg>`;
+    return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v7M12 15l-4 6M12 15l4 6M6 11h12"/></svg>`;
   }
   if (name === 'teams') return `<svg width="${size}" height="${size}" viewBox="0 0 24 24"><circle cx="8" cy="9" r="4" fill="#ff4d4d"/><circle cx="16" cy="9" r="4" fill="#3d8bff"/><path d="M2 21c0-4 3-6 6-6s6 2 6 6M10 21c0-4 3-6 6-6s6 2 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
   if (name === 'heart') return `<svg width="${size}" height="${size}" viewBox="0 0 24 24"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z" fill="#ff4d6d"/></svg>`;
   const d = ICON_PATHS[name];
   if (!d) return '';
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
 }
 
 // Smooth vector art for weapons, items and power fruits.
@@ -123,7 +123,10 @@ function initUI(app) {
   const $ = (id) => document.getElementById(id);
   const w = app.world, s = app.settings;
   const ui = $('ui');
-  for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = iconSvg(el.dataset.icon, el.classList.contains('ic') ? 18 : 20);
+  for (const el of document.querySelectorAll('[data-icon]')) {
+    const chunky = el.classList.contains('tile') || el.classList.contains('ic') || el.classList.contains('x');
+    el.innerHTML = iconSvg(el.dataset.icon, el.classList.contains('x') ? 16 : chunky ? 22 : 20, chunky ? 2.6 : 2);
+  }
 
   // ---- panels ----
   const secBtns = [...document.querySelectorAll('[data-sec]')];
@@ -330,6 +333,63 @@ function initUI(app) {
     for (const c of mapCards) c.el.classList.toggle('on', c.key === w.mapKey);
     $('map-sub').textContent = w.mapKey ? 'Playing on ' + MAPS[w.mapKey].name : 'No map. Fighting on your desktop';
   }
+  // ---- next-arena picker between matches ----
+  const voteToggles = [];
+  const setVote = (v) => { s.mapVote = v; app.save(); for (const sh of voteToggles) sh(); if (!v) closePicker(); };
+  voteToggles.push(toggle('map-vote', () => s.mapVote, setVote), toggle('map-vote2', () => s.mapVote, setVote));
+  const pickEl = $('mappick'), pickCards = [];
+  let pickOpen = false, pickThumbs = false;
+  for (const key of mapList) {
+    const b = document.createElement('button');
+    b.className = 'card';
+    b.innerHTML = `<canvas width="240" height="100"></canvas><div class="h">${key ? MAPS[key].name : 'No map'}</div>`;
+    b.onclick = () => choose(key);
+    $('mp-grid').appendChild(b);
+    pickCards.push({ el: b, key, cv: b.querySelector('canvas') });
+  }
+  const pickTicks = () => Math.max(w.restTicks, 600);
+  function openPicker() {
+    if (!s.mapVote || w.fighters.length < 2) return;
+    if (!pickThumbs) { for (const c of pickCards) drawMapThumb(c.cv, c.key); pickThumbs = true; }
+    for (const c of pickCards) c.el.classList.toggle('cur', c.key === w.mapKey);
+    const champ = w.match === 'teams' && w.winTeam >= 0 ? TEAM_NAMES[w.winTeam] : w.winner ? w.winner.name : null;
+    $('mp-title').textContent = champ ? `${champ} wins! Pick the next arena` : 'Pick the next arena!';
+    $('mp-sub').textContent = 'Now playing: ' + (w.mapKey ? MAPS[w.mapKey].name : 'your desktop');
+    $('mp-keep').textContent = w.mapKey ? 'Keep ' + MAPS[w.mapKey].name : 'Keep no map';
+    pickOpen = true;
+    w.holdRest = true;
+    pickEl.classList.add('show');
+  }
+  function closePicker() {
+    if (!pickOpen) return;
+    pickOpen = false;
+    w.holdRest = false;
+    pickEl.classList.remove('show');
+  }
+  function choose(key) {
+    if (key !== w.mapKey) {
+      setWorldMap(w, key);
+      s.map = key; app.save();
+      showMaps();
+      // Give everyone a moment to drop onto the new map before the bell.
+      if (w.phase === 'rest') w.phaseT = Math.min(w.phaseT, Math.max(0, w.restTicks - 70));
+    } else if (w.phase === 'rest') w.phaseT = Math.max(w.phaseT, w.restTicks - 20);
+    closePicker();
+  }
+  w.onMatchEnd = openPicker;
+  $('mp-close').onclick = () => choose(w.mapKey);
+  $('mp-keep').onclick = () => choose(w.mapKey);
+  $('mp-random').onclick = () => choose(pick(MAP_KEYS.filter((k) => k !== w.mapKey)));
+  $('mp-off').onclick = () => { setVote(false); app.toast('Map picker off. Turn it back on under Match or Maps.'); };
+  setInterval(() => {
+    if (!pickOpen) return;
+    // A new round started some other way (Fight now, peace mode, fighters removed).
+    if (w.phase !== 'rest' || w.fighters.length < 2) { closePicker(); return; }
+    const left = 1 - w.phaseT / pickTicks();
+    $('mp-timer').style.transform = `scaleX(${Math.max(0, left)})`;
+    if (left <= 0) choose(w.mapKey);
+  }, 100);
+
   toggle('use-windows', () => w.useWindows, (v) => { w.useWindows = s.useWindows = v; w.rebuildPlatforms(); app.save(); });
 
   // ---- match ----

@@ -10,7 +10,7 @@
   const api = window.pets || null;
   const SIZES = { small: 84, medium: 118, large: 160 };
   // pixel: CSS pixels per art pixel (1 = fine, high resolution; 2 = classic; 3 = chunky).
-  const DEFAULTS = { size: 'medium', roster: null, match: 'ffa', peace: false, cinematic: true, rest: 3, panelOpen: true, autoUpdate: true, pixel: 1, map: null, useWindows: true, powerTags: true };
+  const DEFAULTS = { size: 'medium', roster: null, match: 'ffa', peace: false, cinematic: true, rest: 3, panelOpen: true, autoUpdate: true, pixel: 1, map: null, useWindows: true, powerTags: true, mapVote: true };
 
   const settings = (() => {
     try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('stickfight.settings'))); }
@@ -220,7 +220,7 @@
   let captured = false;
   // Everything interactive the overlay must stop clicks for. Looked up live so new
   // cards are covered automatically (a hard-coded list once missed the Armory).
-  const HIT_SELECTOR = '#rail, #tab, .panel.open';
+  const HIT_SELECTOR = '#rail, #tab, .panel.open, #mappick.show';
   function cursorOverUI() {
     const c = world.cursor;
     if (!c.on || uiEl.classList.contains('hidden')) return false;

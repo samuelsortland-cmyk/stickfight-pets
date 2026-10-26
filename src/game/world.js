@@ -831,7 +831,8 @@ class World {
         if (this.phaseT > 90) this.startRound();
         break;
       case 'rest':
-        if (this.phaseT >= this.restTicks) this.startRound();
+        // The between-matches map picker can hold the next round back while it's open.
+        if (this.phaseT >= this.restTicks && !this.holdRest) this.startRound();
         break;
       case 'intro':
         if (this.phaseT === 30) this.banner('FIGHT!', 40, '#ffd23f');
@@ -857,7 +858,7 @@ class World {
         }
         break;
       case 'victory':
-        if (this.phaseT >= 130) this.setPhase('rest');
+        if (this.phaseT >= 130) { this.setPhase('rest'); if (this.onMatchEnd) this.onMatchEnd(); }
         break;
     }
     this.inCombat = this.phase === 'intro' || this.phase === 'fight' || this.phase === 'ko';
