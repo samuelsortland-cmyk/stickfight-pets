@@ -1,6 +1,6 @@
 {
   "name": "stickfight-pets",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "AI stickman desktop pets that fight each other on your screen, inspired by Animator vs. Animation.",
   "main": "main.js",
   "scripts": {

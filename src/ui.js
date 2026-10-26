@@ -128,8 +128,21 @@ function initUI(app) {
     for (const b of flyBtns) b.classList.toggle('on', b.dataset.fly === openFly);
     for (const f of document.querySelectorAll('.fly')) f.classList.toggle('open', f.id === 'fly-' + openFly);
     ui.classList.toggle('flyopen', !!openFly);
+    if (openFly) placeFly($('fly-' + openFly), flyBtns.find((b) => b.dataset.fly === openFly));
     if (openFly) refresh(true);
   };
+  // Line the card up with its dock button, but keep it fully on screen. Its position
+  // is fixed while open so nothing jumps under the cursor when content changes.
+  function placeFly(card, btn) {
+    const uiTop = ui.getBoundingClientRect().top;
+    card.style.top = '0px';
+    const h = Math.min(card.scrollHeight + 4, innerHeight - 24);
+    const want = btn.getBoundingClientRect().top - 40;
+    const top = clamp(want, 12, innerHeight - h - 12);
+    card.style.top = (top - uiTop) + 'px';
+    card.style.maxHeight = (innerHeight - top - 12) + 'px';
+  }
+  window.addEventListener('resize', () => { if (openFly) placeFly($('fly-' + openFly), flyBtns.find((b) => b.dataset.fly === openFly)); });
   for (const b of flyBtns) b.onclick = () => setFly(b.dataset.fly);
   app.closeFly = () => { if (openFly) setFly(openFly); };
 
@@ -194,31 +207,55 @@ function initUI(app) {
   $('clear-all').onclick = () => { w.clearFighters(); app.saveRoster(); refresh(true); };
 
   // ---- Armory card ----
-  const tiles = [];
-  const addTiles = (id, kinds, nameOf) => {
-    for (const kind of kinds) {
+  const CATS = {
+    weapons: Object.keys(WEAPONS),
+    items: Object.keys(CONSUMABLES),
+    powers: ABILITY_KEYS,
+  };
+  // Short enough to fit the fixed-size detail box.
+  const DESCS = {
+    sword: 'Fast, long slashes.', hammer: 'Slow smash. Cracks the ground.', spear: 'Longest reach there is.', blaster: 'Shoots from range.',
+    medkit: 'Heals 45 health.', energy: 'Fills the super meter.', grenade: 'Thrown at enemies. Boom.',
+    flame: 'Fire Fist: exploding fireball.', ice: 'Ice Age: freezes enemies.', light: 'Teleport kicks, 3 enemies.',
+    quake: 'Cracks the screen. Huge knockback.', dark: 'Black hole. Pulls, then implodes.', rumble: 'Lightning storm on everyone.',
+    gravity: 'Drops a meteor. Leaves a crater.', buddha: 'Golden giant for 8 seconds.', ki: 'Screen-wide energy beam.',
+  };
+  const nameOf = (k) => WEAPONS[k] ? WEAPONS[k].name : ABILITIES[k] ? ABILITIES[k].name : CONSUMABLES[k].name;
+  const descOf = (k) => DESCS[k] || (ABILITIES[k] ? ABILITIES[k].desc : '');
+  let cat = 'weapons';
+  const tilesEl = $('arm-tiles');
+  const showDetail = (k) => {
+    $('arm-name').textContent = k ? nameOf(k) + (ABILITIES[k] ? ' fruit' : '') : 'Pick something';
+    $('arm-desc').textContent = k ? descOf(k) : 'Then click a fighter to give it, or anywhere to drop it.';
+  };
+  const renderTiles = () => {
+    tilesEl.textContent = '';
+    for (const kind of CATS[cat]) {
       const b = document.createElement('button');
-      b.className = 'btn tile';
+      b.className = 'btn tile' + (app.tool === 'item' && app.itemKind === kind ? ' on' : '');
+      b.dataset.kind = kind;
       b.innerHTML = itemSvg(kind) + `<span>${nameOf(kind)}</span>`;
-      b.title = ABILITIES[kind] ? `${ABILITIES[kind].name}: ${ABILITIES[kind].desc}` : nameOf(kind);
+      b.onmouseenter = () => showDetail(kind);
+      b.onmouseleave = () => showDetail(app.tool === 'item' ? app.itemKind : null);
       b.onclick = () => {
         const same = app.tool === 'item' && app.itemKind === kind;
         app.itemKind = same ? null : kind;
-        for (const t of tiles) t.el.classList.toggle('on', t.kind === app.itemKind);
-        $('arm-desc').textContent = same ? 'Pick something, then click a fighter to give it, or click anywhere to drop it.'
-          : (ABILITIES[kind] ? ABILITIES[kind].desc + ' ' : '') + 'Click a fighter to give it, or anywhere to drop it.';
         app.setTool(same ? 'hand' : 'item');
+        renderTiles();
+        showDetail(app.itemKind);
       };
-      $(id).appendChild(b);
-      tiles.push({ el: b, kind });
+      tilesEl.appendChild(b);
     }
   };
-  addTiles('tiles-weapons', Object.keys(WEAPONS), (k) => WEAPONS[k].name);
-  addTiles('tiles-items', Object.keys(CONSUMABLES), (k) => CONSUMABLES[k].name);
-  addTiles('tiles-powers', ABILITY_KEYS, (k) => ABILITIES[k].name);
-  app.onItemToolEnd = () => { app.itemKind = null; for (const t of tiles) t.el.classList.remove('on'); };
+  for (const t of document.querySelectorAll('#arm-tabs .btn')) t.onclick = () => {
+    cat = t.dataset.cat;
+    for (const x of document.querySelectorAll('#arm-tabs .btn')) x.classList.toggle('on', x === t);
+    renderTiles();
+  };
+  renderTiles();
+  app.onItemToolEnd = () => { app.itemKind = null; renderTiles(); showDetail(null); };
   $('arm-rain').onclick = () => {
-    const kinds = Object.keys(WEAPONS).concat(Object.keys(CONSUMABLES), ABILITY_KEYS);
+    const kinds = CATS.weapons.concat(CATS.items, CATS.powers);
     for (let i = 0; i < 8; i++) spawnItem(w, pick(kinds), rand(w.left + 60, w.right - 60), rand(-200, -40), { vx: rand(-2, 2) });
   };
   $('arm-clear').onclick = () => { w.items = []; };

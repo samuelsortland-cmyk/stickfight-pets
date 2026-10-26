@@ -168,7 +168,8 @@
   canvas.addEventListener('mousedown', (e) => {
     const x = e.clientX, y = e.clientY;
     world.cursorMove(x, y);
-    if (app.closeFly) app.closeFly();
+    // Keep the Armory open while placing items so you can hand out several in a row.
+    if (app.closeFly && app.tool !== 'item') app.closeFly();
     if (e.button === 2) { if (app.tool !== 'hand') app.setTool('hand'); return; }
     if (e.button !== 0) return;
     const f = world.fighterAt(x, y, 12);
@@ -210,11 +211,13 @@
 
   // The overlay is click-through except over a fighter, over the panel, or while a tool is active.
   let captured = false;
-  const hitEls = ['dock', 'tab', 'fly-fighters', 'fly-match', 'fly-settings', 'toast'].map((id) => document.getElementById(id));
+  // Everything interactive the overlay must stop clicks for. Looked up live so new
+  // cards are covered automatically (a hard-coded list once missed the Armory).
+  const HIT_SELECTOR = '#dock, #tab, .fly.open';
   function cursorOverUI() {
     const c = world.cursor;
     if (!c.on || uiEl.classList.contains('hidden')) return false;
-    for (const el of hitEls) {
+    for (const el of document.querySelectorAll(HIT_SELECTOR)) {
       // offsetParent is null for position:fixed elements too, so test layout boxes instead.
       if (!el || !el.getClientRects().length) continue; // not displayed
       const r = el.getBoundingClientRect();

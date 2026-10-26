@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
-  "notes": "Armory: weapons, items and 9 destructive power fruits",
+  "version": "2.2.1",
+  "notes": "UI fixes: Armory clickable in the overlay, cards fit every screen",
   "files": [
     {
       "path": "main.js",
@@ -16,11 +16,11 @@
     },
     {
       "path": "package.json",
-      "sha256": "e345a6d00c2b36e11ae76bd2640fa1d0dc86e4305437aeabb43215722cce9eb4"
+      "sha256": "eed61437f333b11ac2445eaafcf8ec6dfa6c8b0166ecf52b4bfce4e9734d6c75"
     },
     {
       "path": "README.md",
-      "sha256": "1421878027b263008ab858b6e2116de3a089235d30e0f6553dc7518503dec77e"
+      "sha256": "d1ba8505d466d5a963b3a4d0f17d860b840ea1dbc1a5efc96d981e55e5f62cb1"
     },
     {
       "path": "FIGHTING_DESIGN.md",
@@ -32,7 +32,7 @@
     },
     {
       "path": "src/app.js",
-      "sha256": "b4b66613e1227f1dfdc91a8e58f12d7302ceff3cd93e4067422d51e1d73ac5ad"
+      "sha256": "09eed834ebdaa733a0af748ee19a96eae85d74322bf211a9b7fdfd3acc456fe6"
     },
     {
       "path": "src/game/ai.js",
@@ -64,11 +64,11 @@
     },
     {
       "path": "src/index.html",
-      "sha256": "a427cd7a17fcc17ba36ef26f752bce1fba0307de962d8ed71a6fec36327b13ec"
+      "sha256": "2e6071cd11c68d3c9da40da9a02d590334cf89f1046678ddf6355a7b25690f08"
     },
     {
       "path": "src/ui.js",
-      "sha256": "91698b8f7fadb3c705ec38fea4fdd9841723185db6a79752575a441845f4c4bb"
+      "sha256": "d9d0f388cab8dfd2842bae1edb06cd407d409672db377b08b6e9f33b66652f61"
     },
     {
       "path": "src/windows.js",

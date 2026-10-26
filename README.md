@@ -36,7 +36,7 @@ A retro toolbox sits on the right edge of the screen. Hover a button to see its 
 - **Match:** pick FFA, Teams or Peace, then hit **Fight!** There are also Slow-mo and Pause switches.
 - **Settings:** fighter size, pixel size (Fine is high resolution, Classic and Chunky are blockier), the break between rounds, cinematic supers, showing detected window platforms, clearing drawings, resetting the AI's memory, updates, hiding the pets, and quitting.
 
-**Armory** (sword button): pick a weapon, item or power fruit, then click a fighter to hand it over, or click anywhere to drop it on the ground. Fighters also walk over and grab what they need on their own. **Item rain** drops 8 random things from the sky.
+**Armory** (sword button): pick a weapon, item or power fruit, then click a fighter to hand it over, or click anywhere to drop it on the ground. Fighters also walk over and grab what they need on their own. The Armory has Weapons, Items and Powers tabs; **Rain** drops 8 random things from the sky, **Clear** removes items on screen and **Unpower** takes every power away.
 
 | Weapons | What they do |
 |---|---|
