@@ -34,7 +34,7 @@ A retro toolbox sits on the right edge of the screen. Hover a button to see its 
 **Cards** (bottom half)
 - **Fighters:** all 12 fighters as portraits. Click an empty slot to add that fighter, and hover a fighter to remove it with ✕. You can pick the fighting style new fighters use, add a random fighter, heal everyone, or clear the screen.
 - **Match:** pick FFA, Teams or Peace, then hit **Fight!** There are also Slow-mo and Pause switches.
-- **Settings:** fighter size, the break between rounds, cinematic supers, showing detected window platforms, clearing drawings, resetting the AI's memory, updates, hiding the pets, and quitting.
+- **Settings:** fighter size, pixel size (Fine is high resolution, Classic and Chunky are blockier), the break between rounds, cinematic supers, showing detected window platforms, clearing drawings, resetting the AI's memory, updates, hiding the pets, and quitting.
 
 **Hotkeys** (Ctrl is Cmd on macOS):
 
@@ -48,7 +48,7 @@ A retro toolbox sits on the right edge of the screen. Hover a button to see its 
 
 ## The look
 
-Everything is drawn on a low-resolution layer and scaled up with hard pixel edges, in the style of Animator vs. Animation pixel fan art:
+Everything is drawn on a pixel grid with hard edges, in the style of Animator vs. Animation pixel fan art. By default the grid is fine (one art pixel per screen pixel) for smooth, high-resolution stickmen; switch **Pixel size** to Classic or Chunky in Settings for a blockier look. Text and health bars always stay chunky so they're readable:
 - Stickmen have thick black-outlined limbs and hollow ring heads.
 - All text uses a custom 5×7 pixel font (`assets/stickpix.ttf`, built by `tools/build-font.py`).
 

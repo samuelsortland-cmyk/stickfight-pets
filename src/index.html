@@ -51,7 +51,9 @@
   #dock .sep { width: 36px; height: 2px; background: var(--line); margin: 2px 0; }
   #dock .dbtn .dot { position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; background: var(--accent); border: 1px solid var(--ink); display: none; }
   #dock .dbtn .dot.show { display: block; }
-  #tab { position: fixed; right: 0; top: 50%; transform: translateY(-50%); width: 22px; height: 76px; padding: 0; display: none; z-index: 30; }
+  #tab { position: fixed; right: 0; top: 50%; transform: translateY(-50%); width: 34px; height: 96px; padding: 0; display: none; z-index: 30;
+    flex-direction: column; gap: 8px; border-right: none; border-left: 4px solid var(--accent); }
+  #tab .vt { writing-mode: vertical-rl; color: var(--accent); font-size: 16px; letter-spacing: 2px; }
   #ui.mini #dock, #ui.mini .fly { display: none !important; }
   #ui.mini + #tab, body.mini #tab { display: flex; }
 
@@ -186,6 +188,12 @@
         </div>
       </div>
       <div>
+        <div class="label">Pixel size</div>
+        <div class="seg" id="pixel" style="margin-top:6px">
+          <button class="btn" data-px="1" title="High resolution">Fine</button><button class="btn" data-px="2">Classic</button><button class="btn" data-px="3">Chunky</button>
+        </div>
+      </div>
+      <div>
         <div class="label"><span>Break between rounds</span><span id="rest-val"></span></div>
         <input type="range" id="rest" min="1" max="20" step="1" style="margin-top:8px">
       </div>
@@ -209,7 +217,7 @@
     </div>
   </div>
 </div>
-<button class="btn" id="tab" title="Show StickFight tools"><span data-icon="expand"></span></button>
+<button class="btn" id="tab" title="Show StickFight tools"><span data-icon="expand"></span><span class="vt">Tools</span></button>
 
 <script src="game/poses.js"></script>
 <script src="game/moves.js"></script>

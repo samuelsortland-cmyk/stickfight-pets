@@ -86,15 +86,15 @@ function drawPortrait(canvas, entry, fighter) {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const S = 0.34;
-  const savedU = U;
-  U = 1;
+  const savedU = U, savedT = T;
+  U = 1; T = 2;
   const pose = fighter && fighter.hp <= 0 ? POSES.hitHigh : POSES.stance;
   const L = poseLocal(pose, 1, 0);
   const P = {};
   JOINTS.forEach((j, i) => { P[j] = { x: canvas.width / 2 - 2 + L.x[i] * S, y: canvas.height - 3 + (L.y[i] - L.low) * S }; });
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   drawBody(ctx, P, S, entry.color, shade(entry.color, -0.38), INK, parseInt(entry.color.slice(1, 3), 16) < 80);
-  U = savedU;
+  U = savedU; T = savedT;
 }
 
 function initUI(app) {
@@ -200,6 +200,14 @@ function initUI(app) {
   for (const b of document.querySelectorAll('#size .btn')) {
     b.classList.toggle('on', b.dataset.size === s.size);
     b.onclick = () => { if (s.size === b.dataset.size) return; s.size = b.dataset.size; app.saveRoster(); app.save(); location.reload(); };
+  }
+  for (const b of document.querySelectorAll('#pixel .btn')) {
+    b.classList.toggle('on', +b.dataset.px === s.pixel);
+    b.onclick = () => {
+      s.pixel = app.view.pixel = +b.dataset.px;
+      app.save();
+      for (const x of document.querySelectorAll('#pixel .btn')) x.classList.toggle('on', x === b);
+    };
   }
   const rest = $('rest');
   rest.value = s.rest;

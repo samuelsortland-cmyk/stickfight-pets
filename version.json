@@ -1,6 +1,6 @@
 {
-  "version": "2.1.1",
-  "notes": "Updater fetches from the exact latest commit so new versions arrive immediately",
+  "version": "2.1.2",
+  "notes": "Higher-resolution stickmen, pixel size setting, fix the tucked-away tab not opening",
   "files": [
     {
       "path": "main.js",
@@ -16,11 +16,11 @@
     },
     {
       "path": "package.json",
-      "sha256": "a869f7b68761c270a241d1e030e56ef6905f5aa1c6d35f3b9d319a4f236a255f"
+      "sha256": "c2ee7ba4869ac261f85041daa11622010d4159c0d4f27dc578efc49a391b8c5a"
     },
     {
       "path": "README.md",
-      "sha256": "1c193093f314fbe9f3a365056d1d9b6c88c7df5896c1410120b481869a622c6d"
+      "sha256": "3997f40cec78f50c0746f7437966b8daaccc6dfffa0948f51210ef06d9716c8f"
     },
     {
       "path": "FIGHTING_DESIGN.md",
@@ -32,7 +32,7 @@
     },
     {
       "path": "src/app.js",
-      "sha256": "94f1b7c60877546f35b47fb08617e4ffd80ac1347be1d0c87e0b36ddb3de9d61"
+      "sha256": "e1915035c1510744f8c695ae1703be259fc1b7628702b10a3ecd561531a45450"
     },
     {
       "path": "src/game/ai.js",
@@ -52,7 +52,7 @@
     },
     {
       "path": "src/game/render.js",
-      "sha256": "7ab01b2435aafa1b0b85d6ab0b348a555e48ad1252c9a51e0a5b3cee44436806"
+      "sha256": "439689d149ab858a58ee78b533b9ff92e2746452b57346f3c2a5623b0fb9546e"
     },
     {
       "path": "src/game/world.js",
@@ -60,11 +60,11 @@
     },
     {
       "path": "src/index.html",
-      "sha256": "23e1974aeda1d0124f2c9e1369b112a5799e2ebaae5295b873afc5fdccc38973"
+      "sha256": "da110d79807640a1d3439879fa21a711034d5588fe1ee2fcfe6db3f22b35efb6"
     },
     {
       "path": "src/ui.js",
-      "sha256": "2a7ca77b971fc3697a618b549f4618cb29140888c7d4fb4d2bfe6ab1dae5ffdd"
+      "sha256": "1ded015d67bd671f27f94c9227cc7133e41761071ec6f4c90bcf086b0836b36d"
     },
     {
       "path": "src/windows.js",

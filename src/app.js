@@ -9,16 +9,15 @@
   const uiEl = document.getElementById('ui');
   const api = window.pets || null;
   const SIZES = { small: 84, medium: 118, large: 160 };
-  const DEFAULTS = { size: 'medium', roster: null, match: 'ffa', peace: false, cinematic: true, rest: 3, panelOpen: true, autoUpdate: true };
-  // CSS pixels per art pixel for each fighter size.
-  const PIXEL = { small: 2, medium: 2, large: 3 };
+  // pixel: CSS pixels per art pixel (1 = fine, high resolution; 2 = classic; 3 = chunky).
+  const DEFAULTS = { size: 'medium', roster: null, match: 'ffa', peace: false, cinematic: true, rest: 3, panelOpen: true, autoUpdate: true, pixel: 1 };
 
   const settings = (() => {
     try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('stickfight.settings'))); }
     catch (e) { return Object.assign({}, DEFAULTS); }
   })();
 
-  const view = { dpr: window.devicePixelRatio || 1, hover: null, tool: 'hand', pixel: PIXEL[settings.size] || 2 };
+  const view = { dpr: window.devicePixelRatio || 1, hover: null, tool: 'hand', pixel: [1, 2, 3].includes(settings.pixel) ? settings.pixel : 1 };
   const world = new World({
     width: innerWidth, height: innerHeight, size: SIZES[settings.size] || 90,
     cinematic: settings.cinematic, match: settings.match, restTicks: settings.rest * 60,
@@ -205,7 +204,8 @@
     const c = world.cursor;
     if (!c.on || uiEl.classList.contains('hidden')) return false;
     for (const el of hitEls) {
-      if (!el || !el.offsetParent) continue; // not displayed
+      // offsetParent is null for position:fixed elements too, so test layout boxes instead.
+      if (!el || !el.getClientRects().length) continue; // not displayed
       const r = el.getBoundingClientRect();
       if (r.width && c.x >= r.left - 2 && c.x <= r.right + 6 && c.y >= r.top - 2 && c.y <= r.bottom + 6) return true;
     }
