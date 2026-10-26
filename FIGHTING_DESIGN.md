@@ -155,6 +155,28 @@ In free-for-all, the same "busy" bonus makes fighters third-party ongoing fights
   - In free-for-all, fighters prefer opponents nobody else is attacking, so a big brawl splits into separate duels instead of one pile.
   - In teams, only the leader and the flanker go after the focus target. Everyone else spreads out to the least-crowded enemy.
 
+## 9. Version 2.2: weapons, items and powers
+
+**Weapons extend the hitbox, not just the numbers.** A held weapon points along the forearm. Front-hand attacks check three points along the blade (tip, middle, hand) instead of the fist, so a katana's arc or a spear's tip really is where the damage happens. Each weapon also unlocks one dedicated move with its own frame data:
+
+| Move | Startup | Purpose |
+|---|---|---|
+| Slash | 7 | Fast and long |
+| Smash | 14 | Slow knockdown that cracks the ground |
+| Thrust | 9 | Longest reach in the game |
+| Shoot | 5 | Bullets |
+
+Weapons multiply damage and knockback, wear out, and can be knocked loose.
+
+**The AI treats gear as part of the game plan.** When it has breathing room (or is in a support role), it scores nearby items by need: a medkit is worth a lot at low health, a weapon is worth a lot when unarmed, and a fruit is worth a lot when it has no power. It weighs that against distance and goes for the best one. Armed fighters favor their weapon move in neutral and use it to punish.
+
+**Powers are telegraphed, then committal.** Every power has a visible wind-up (a pose and a shouted callout, the anime convention that also gives the opponent a chance to react), then a long recovery and a cooldown of 5–18 seconds. The AI only casts when the power's own test says it will connect, for example:
+- Ice Age needs the target level with you on the ground.
+- Seaquake needs the target close and in front.
+- Ki Beam needs a clear horizontal line.
+
+Powers can hit fighters who are already ragdolling, which is what makes them feel destructive rather than just strong.
+
 ## Sources
 
 - Dustloop, "Using Frame Data": https://dustloop.com/w/Using_Frame_Data

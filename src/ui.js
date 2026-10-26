@@ -8,6 +8,7 @@ const TOOL_DESC = {
   bomb: 'Click to drop a bomb.',
   smite: 'Click to call down lightning.',
   spawn: 'Click anywhere to drop a fighter.',
+  item: 'Click a fighter to give it, or anywhere to drop it.',
 };
 
 const ICON_COLORS = {
@@ -51,6 +52,9 @@ const ICONS = {
   collapse: [
     '............', '.ww...ww....', '..ww...ww...', '...ww...ww..', '....ww...ww.', '.....ww...ww',
     '.....ww...ww', '....ww...ww.', '...ww...ww..', '..ww...ww...', '.ww...ww....', '............'],
+  armory: [
+    '..........ww', '.........wgw', '........wgw.', '.......wgw..', '......wgw...', '.oo..wgw....',
+    'o..oyyw.....', 'o..yyy......', '.oo.yyy.....', '...nn.yy....', '..nn........', '.nn.........'],
   expand: [
     '............', '....ww...ww.', '...ww...ww..', '..ww...ww...', '.ww...ww....', 'ww...ww.....',
     'ww...ww.....', '.ww...ww....', '..ww...ww...', '...ww...ww..', '....ww...ww.', '............'],
@@ -64,6 +68,19 @@ function iconSvg(name, size = 24) {
   rows.forEach((row, y) => {
     for (let x = 0; x < row.length; x++) {
       const c = ICON_COLORS[row[x]];
+      if (c) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${c}"/>`;
+    }
+  });
+  return `<svg width="${size}" height="${size}" viewBox="0 0 12 12" shape-rendering="crispEdges">${rects}</svg>`;
+}
+
+// Item / fruit sprite (from arsenal.js) as crisp SVG.
+function itemSvg(kind, size = 32) {
+  const rows = itemSprite(kind);
+  let rects = '';
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const c = spriteColor(kind, row[x]);
       if (c) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${c}"/>`;
     }
   });
@@ -154,7 +171,7 @@ function initUI(app) {
     el.className = 'slot empty';
     el.title = entry.name;
     el.innerHTML = `<div class="hp"><i></i></div><span class="lv"></span><span class="team"></span><canvas class="pix" width="32" height="36"></canvas>
-      <span class="plus">+</span><span class="nm">${entry.name}</span><button class="btn x" title="Remove">×</button>`;
+      <span class="plus">+</span><span class="nm">${entry.name}</span><span class="pw"></span><button class="btn x" title="Remove">×</button>`;
     const cv = el.querySelector('canvas');
     drawPortrait(cv, entry, null);
     el.onclick = (e) => {
@@ -164,7 +181,7 @@ function initUI(app) {
       if (w.addFighter({ name: entry.name, arch: app.spawnArch })) { app.saveRoster(); refresh(true); }
     };
     slotsEl.appendChild(el);
-    return { el, entry, cv, hp: el.querySelector('.hp i'), hpWrap: el.querySelector('.hp'), lv: el.querySelector('.lv'), team: el.querySelector('.team'), dead: null };
+    return { el, entry, cv, pw: el.querySelector('.pw'), hp: el.querySelector('.hp i'), hpWrap: el.querySelector('.hp'), lv: el.querySelector('.lv'), team: el.querySelector('.team'), dead: null };
   });
   $('add-rand').onclick = () => {
     const free = PALETTE.filter((p) => !w.fighters.some((f) => f.name === p.name));
@@ -175,6 +192,41 @@ function initUI(app) {
   };
   $('heal').onclick = () => w.healAll();
   $('clear-all').onclick = () => { w.clearFighters(); app.saveRoster(); refresh(true); };
+
+  // ---- Armory card ----
+  const tiles = [];
+  const addTiles = (id, kinds, nameOf) => {
+    for (const kind of kinds) {
+      const b = document.createElement('button');
+      b.className = 'btn tile';
+      b.innerHTML = itemSvg(kind) + `<span>${nameOf(kind)}</span>`;
+      b.title = ABILITIES[kind] ? `${ABILITIES[kind].name}: ${ABILITIES[kind].desc}` : nameOf(kind);
+      b.onclick = () => {
+        const same = app.tool === 'item' && app.itemKind === kind;
+        app.itemKind = same ? null : kind;
+        for (const t of tiles) t.el.classList.toggle('on', t.kind === app.itemKind);
+        $('arm-desc').textContent = same ? 'Pick something, then click a fighter to give it, or click anywhere to drop it.'
+          : (ABILITIES[kind] ? ABILITIES[kind].desc + ' ' : '') + 'Click a fighter to give it, or anywhere to drop it.';
+        app.setTool(same ? 'hand' : 'item');
+      };
+      $(id).appendChild(b);
+      tiles.push({ el: b, kind });
+    }
+  };
+  addTiles('tiles-weapons', Object.keys(WEAPONS), (k) => WEAPONS[k].name);
+  addTiles('tiles-items', Object.keys(CONSUMABLES), (k) => CONSUMABLES[k].name);
+  addTiles('tiles-powers', ABILITY_KEYS, (k) => ABILITIES[k].name);
+  app.onItemToolEnd = () => { app.itemKind = null; for (const t of tiles) t.el.classList.remove('on'); };
+  $('arm-rain').onclick = () => {
+    const kinds = Object.keys(WEAPONS).concat(Object.keys(CONSUMABLES), ABILITY_KEYS);
+    for (let i = 0; i < 8; i++) spawnItem(w, pick(kinds), rand(w.left + 60, w.right - 60), rand(-200, -40), { vx: rand(-2, 2) });
+  };
+  $('arm-clear').onclick = () => { w.items = []; };
+  $('arm-strip').onclick = () => {
+    for (const f of w.fighters) { f.ability = null; f.giantT = 0; }
+    app.saveRoster();
+    app.toast('All powers removed.');
+  };
 
   // ---- Match card ----
   const modeBtns = [...document.querySelectorAll('#mode .btn')];
@@ -245,18 +297,22 @@ function initUI(app) {
   function refresh(force) {
     if (!openFly && !force) return;
     $('count').textContent = `${w.fighters.length}/${PALETTE.length}`;
+    $('arm-count').textContent = w.items.length ? w.items.length + ' on screen' : '';
     $('round').textContent = w.peace ? 'peace' : w.round ? 'round ' + w.round : '';
     for (const sl of slots) {
       const f = w.fighters.find((q) => q.name === sl.entry.name);
       sl.el.classList.toggle('empty', !f);
       sl.hpWrap.style.display = f ? 'block' : 'none';
+      if (!f) sl.pw.style.display = 'none';
       sl.lv.textContent = f ? 'L' + f.level : '';
       sl.team.style.display = f && w.match === 'teams' ? 'block' : 'none';
       if (f) {
         sl.hp.style.width = Math.max(0, f.hp) + '%';
         sl.hp.style.background = f.hp > 50 ? '#40e070' : f.hp > 25 ? '#ffc93d' : '#ff4040';
         sl.team.style.background = TEAM_COLORS[f.team] || '#fff';
-        sl.el.title = `${f.name} · ${f.archName} · ${f.stats.wins} wins`;
+        sl.el.title = `${f.name} · ${f.archName} · ${f.stats.wins} wins` + (f.ability ? ` · ${ABILITIES[f.ability].name} power` : '') + (f.weapon ? ` · ${WEAPONS[f.weapon.kind].name}` : '');
+        sl.pw.style.display = f.ability ? 'block' : 'none';
+        if (f.ability) sl.pw.style.background = ABILITIES[f.ability].color;
       } else sl.el.title = 'Add ' + sl.entry.name;
       const dead = !!(f && f.hp <= 0);
       if (dead !== sl.dead) { sl.dead = dead; drawPortrait(sl.cv, sl.entry, f); }

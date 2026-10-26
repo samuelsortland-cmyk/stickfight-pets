@@ -92,6 +92,11 @@
   .slot .lv { position: absolute; left: 6px; top: 6px; color: var(--muted); font-size: 16px; }
   .slot .team { position: absolute; right: 6px; top: 6px; width: 10px; height: 10px; border: 2px solid var(--ink); }
 
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .tile { flex-direction: column; height: 70px; gap: 6px; padding: 6px 2px 5px; }
+  .tile svg { width: 32px; height: 32px; }
+  .tile.on { background: var(--raised); box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
+  .slot .pw { position: absolute; right: 6px; bottom: 16px; width: 12px; height: 12px; border: 2px solid var(--ink); display: none; }
   .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .mode { flex-direction: column; height: 76px; gap: 8px; }
   .switch { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 4px 0; }
@@ -136,6 +141,7 @@
     <button class="btn dbtn" data-tool="spawn"><span data-icon="spawn"></span><span class="tip">Spawn · click to drop one</span></button>
     <div class="sep"></div>
     <button class="btn dbtn" data-fly="fighters"><span data-icon="fighter"></span><span class="tip">Fighters</span></button>
+    <button class="btn dbtn" data-fly="armory"><span data-icon="armory"></span><span class="tip">Armory · weapons &amp; powers</span></button>
     <button class="btn dbtn" data-fly="match"><span data-icon="swords"></span><span class="tip">Match</span></button>
     <button class="btn dbtn" data-fly="settings"><span data-icon="gear"></span><span class="dot" id="upd-dot"></span><span class="tip">Settings</span></button>
     <div class="sep"></div>
@@ -161,6 +167,24 @@
         <button class="btn" id="heal">Heal</button>
         <button class="btn" id="clear-all">Clear</button>
       </div>
+    </div>
+  </div>
+
+  <div class="fly frame" id="fly-armory">
+    <div class="bar">Armory <small id="arm-count"></small></div>
+    <div class="body">
+      <div class="label">Weapons</div>
+      <div class="tiles" id="tiles-weapons"></div>
+      <div class="label">Items</div>
+      <div class="tiles" id="tiles-items"></div>
+      <div class="label">Power fruits</div>
+      <div class="tiles" id="tiles-powers"></div>
+      <div class="hint" id="arm-desc">Pick something, then click a fighter to give it, or click anywhere to drop it.</div>
+      <div class="row">
+        <button class="btn" id="arm-rain">Item rain</button>
+        <button class="btn" id="arm-clear">Clear items</button>
+      </div>
+      <button class="btn" id="arm-strip">Remove all powers</button>
     </div>
   </div>
 
@@ -225,6 +249,7 @@
 <script src="game/fighter.js"></script>
 <script src="game/world.js"></script>
 <script src="game/render.js"></script>
+<script src="game/arsenal.js"></script>
 <script src="ui.js"></script>
 <script src="app.js"></script>
 </body>

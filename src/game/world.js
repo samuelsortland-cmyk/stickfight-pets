@@ -24,6 +24,9 @@ class World {
     this.S = this.size / 100;
     this.fighters = [];
     this.projectiles = [];
+    this.items = [];
+    this.hazards = [];
+    this.itemId = 0;
     this.fx = [];
     this.decals = [];
     this.winPlats = [];
@@ -85,7 +88,7 @@ class World {
     const arch = opts.arch && ARCHETYPES[opts.arch] ? opts.arch : cfg.arch;
     const f = new Fighter(this, {
       id: this.fighters.length ? Math.max(...this.fighters.map((q) => q.id)) + 1 : 1,
-      name: cfg.name, color: cfg.color, el: cfg.el, arch,
+      name: cfg.name, color: cfg.color, el: cfg.el, arch, ability: opts.ability && ABILITIES[opts.ability] ? opts.ability : null,
       x: opts.x != null ? clamp(opts.x, this.left + 20 * S, this.right - 20 * S) : rand(this.left + 80 * S, this.right - 80 * S),
       y: opts.y != null ? opts.y : -120 * S,
     });
@@ -381,8 +384,18 @@ class World {
 
   checkHit(a) {
     if (!a.move || this.phase !== 'fight') return;
-    const m = a.hitProps();
-    const j = a.pts[m.joint];
+    let m = a.hitProps();
+    // A held weapon extends front-hand attacks: probe along the whole blade.
+    const W = a.weapon && !m.projectile && !m.grab && (m.wpn || m.joint === 'h1') ? WEAPONS[a.weapon.kind] : null;
+    let probes = [a.pts[m.joint]];
+    if (W && W.len > 20) {
+      const tip = a.weaponTip(), h = a.pts.h1;
+      probes = [tip, { x: (tip.x + h.x) / 2, y: (tip.y + h.y) / 2 }, h];
+    }
+    const boost = (W ? W.dmg : 1) * (a.giantT > 0 ? 1.4 : 1), kbB = (W ? W.kb : 1) * (a.giantT > 0 ? 1.4 : 1);
+    if (m.kb && (boost !== 1 || kbB !== 1)) m = Object.assign({}, m, { dmg: m.dmg * boost, kb: [m.kb[0] * kbB, m.kb[1] * kbB] });
+    const rad = m.rad * a.S;
+    const j = probes[0];
     for (const d of this.fighters) {
       if (!this.isEnemy(a, d) || a.hitList.has(d) || d.hp <= 0) continue;
       // Clash: both attacks are out and the fists/feet meet.
@@ -395,9 +408,12 @@ class World {
         }
       }
       if (!this.vulnerable(d)) continue;
-      if (this.hurtDist(d, j.x, j.y) > m.rad * this.S) continue;
+      let at = null;
+      for (const p of probes) if (this.hurtDist(d, p.x, p.y) <= rad) { at = p; break; }
+      if (!at) continue;
       a.hitList.add(d);
-      this.resolveHit(a, d, m, j);
+      this.resolveHit(a, d, m, at);
+      if (W && a.weapon && --a.weapon.uses <= 0) a.breakWeapon();
       if (!a.move) return;
     }
   }
@@ -469,6 +485,12 @@ class World {
     let dmg = m.dmg * Math.max(0.35, 1 - 0.12 * d.combo) * (1 + Math.min(0.2, 0.03 * (a.level - 1)));
     if (counter) dmg *= 1.2;
     dmg *= 1.25; // fast rounds
+    if (d.state === 'frozen') {
+      // Hitting a frozen fighter shatters the ice for bonus damage.
+      dmg *= 1.4;
+      shatterIce(this, d);
+      this.text(at.x, at.y - 18 * S, 'SHATTER!', '#bfefff', 16);
+    }
     this.damage(d, dmg, a);
     d.combo++;
     a.moveHit = 'hit';
@@ -586,6 +608,13 @@ class World {
 
   spawnProjectile(f) {
     const S = this.S, h = f.pts.h1;
+    if (f.move && f.move.shoot) {
+      const tip = f.weaponTip() || h;
+      this.projectiles.push({ owner: f, kind: 'bullet', dmg: 6, x: tip.x, y: tip.y, vx: f.facing * 17 * S, r: 4 * S, life: 70, t: 0, trail: [] });
+      f.vx -= f.facing * 1.5 * S;
+      this.shake = Math.max(this.shake, 2);
+      return;
+    }
     this.projectiles.push({ owner: f, x: h.x + f.facing * 8 * S, y: h.y, vx: f.facing * 7.5 * S, r: 9 * S, life: 220, t: 0, trail: [] });
     this.ring(h.x, h.y, f.light, 20 * S);
     this.flashFx(h.x, h.y, 14 * S);
@@ -622,7 +651,7 @@ class World {
           this.impact(p.x, p.y, dir, 6, '#cfe8ff');
           p.owner.learn('blast', -0.1);
         } else {
-          this.damage(o, 12 * Math.max(0.35, 1 - 0.12 * o.combo), p.owner);
+          this.damage(o, (p.dmg || 12) * Math.max(0.35, 1 - 0.12 * o.combo), p.owner);
           o.combo++;
           o.flash = 4; o.hitstop = 6;
           this.hitFx(p.owner, p.x, p.y, dir, 12);
@@ -631,7 +660,7 @@ class World {
           p.owner.learn('blast', 0.5);
           if (o.hp <= 0) { o.startRagdoll(dir * 8 * S, -7 * S, dir * 0.1, 'ko'); this.onKO(o, p.owner); }
           else if (!o.onGround) { o.juggled = true; o.vx = dir * 4 * S; o.vy = -5 * S; o.hitstun = 20; o.setState('hitstun', true); }
-          else { o.move = null; o.hitType = 'gut'; o.hitstun = 22; o.vx = dir * 4 * S; o.setState('hitstun', true); }
+          else { o.move = null; o.hitType = 'gut'; o.hitstun = p.kind === 'bullet' ? 10 : 22; o.vx = dir * (p.kind === 'bullet' ? 2 : 4) * S; o.setState('hitstun', true); }
         }
         break;
       }
@@ -760,6 +789,8 @@ class World {
     this.winner = null;
     this.winTeam = -1;
     this.projectiles = [];
+    this.hazards = [];
+    this.items = this.items.filter((it) => !it.fuse);
     this.banner('ROUND ' + this.round, 60, '#ffffff');
     if (this.match === 'teams') this.banner('RED vs BLUE', 60, '#ffd23f');
     for (const f of this.fighters) if (chance(0.3)) f.say(pick(LINES.ready), 80);
@@ -983,6 +1014,7 @@ class World {
     this.separate();
     this.updateProjectiles();
     this.thrownHits();
+    updateArsenal(this);
     for (const f of this.fighters) {
       if (f.meter >= 50 && !f.rag && f.hp > 0) this.auraFx(f);
     }

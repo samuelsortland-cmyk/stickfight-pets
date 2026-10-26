@@ -123,6 +123,41 @@ Object.assign(MOVES, {
     cancels: [],
   },
 });
+/* Weapon moves (only usable while holding the matching weapon; see arsenal.js).
+ * wlen = weapon length in units, used for reach. */
+Object.assign(MOVES, {
+  slash: {
+    wpn: true, s: 7, a: 5, r: 13, dmg: 9, hs: 20, bs: 12, kb: [6, -2], stop: 8, joint: 'h1', rad: 9, step: 2.5, wlen: 40, ai: 0,
+    wind: P({ lean: -0.15, head: -0.1, a1: 2.7, e1: 0.45, a2: 0.2, e2: 1.4, l1: 0.4, k1: -0.4, l2: -0.35, k2: -0.2 }),
+    hit: P({ lean: 0.4, a1: 1.1, e1: 0.1, a2: -0.4, e2: 1.0, l1: 0.6, k1: -0.4, l2: -0.5, k2: 0 }),
+    cancels: ['kick', 'uppercut', 'heavy', 'super'],
+  },
+  smash: {
+    wpn: true, s: 14, a: 5, r: 20, dmg: 13, hs: 0, bs: 16, kb: [9, -9], stop: 12, knockdown: true, joint: 'h1', rad: 12, wlen: 34, quake: true, ai: 0,
+    wind: P({ lean: -0.35, head: -0.2, a1: 3.0, e1: 0.6, a2: 2.8, e2: 0.7, l1: 0.4, k1: -0.3, l2: -0.4, k2: -0.1 }),
+    hit: P({ lean: 0.6, head: 0.2, a1: 1.0, e1: 0.0, a2: 0.9, e2: 0.1, l1: 0.7, k1: -0.6, l2: -0.5, k2: 0 }),
+    cancels: [],
+  },
+  thrust: {
+    wpn: true, s: 9, a: 5, r: 16, dmg: 10, hs: 20, bs: 12, kb: [8, -1], stop: 8, joint: 'h1', rad: 8, step: 3.5, wlen: 62, ai: 0,
+    wind: P({ lean: -0.1, a1: -0.4, e1: 2.0, a2: 0.3, e2: 1.6, l1: 0.3, k1: -0.3, l2: -0.4, k2: -0.2 }),
+    hit: P({ lean: 0.45, a1: 1.5, e1: 0.05, a2: 1.2, e2: 0.4, l1: 0.7, k1: -0.5, l2: -0.6, k2: 0 }),
+    cancels: ['kick', 'uppercut', 'super'],
+  },
+  shoot: {
+    wpn: true, s: 5, a: 2, r: 10, dmg: 6, joint: 'h1', rad: 0, projectile: true, shoot: true, wlen: 14, ai: 0,
+    wind: P({ lean: 0.05, a1: 1.4, e1: 0.2, a2: 0.5, e2: 1.5, l1: 0.4, k1: -0.3, l2: -0.4, k2: -0.1 }),
+    hit: P({ lean: -0.08, a1: 1.62, e1: -0.05, a2: 0.5, e2: 1.5, l1: 0.4, k1: -0.3, l2: -0.4, k2: -0.1 }),
+    cancels: ['shoot'],
+  },
+  airslash: {
+    wpn: true, air: true, s: 5, a: 6, r: 10, dmg: 8, hs: 18, kb: [5, -5], stop: 7, joint: 'h1', rad: 9, wlen: 40, ai: 0,
+    wind: P({ lean: -0.2, a1: 2.8, e1: 0.4, a2: 1.6, e2: 0.5, l1: 1.0, k1: -1.6, l2: 0.4, k2: -1.2 }),
+    hit: P({ lean: 0.3, a1: 1.0, e1: 0.1, a2: -0.6, e2: 0.6, l1: 0.8, k1: -1.4, l2: 0.2, k2: -1.0 }),
+    cancels: [],
+  },
+});
+
 MOVES.cross.cancels.push('slide', 'super');
 MOVES.kick.cancels.push('super');
 MOVES.heavy.cancels.push('super');
@@ -135,7 +170,13 @@ for (const key of Object.keys(MOVES)) {
   if (!m.hits) m.hits = [[m.s + 1, m.s + m.a]];
   const L = poseLocal(m.hit, 1, 0);
   const travel = (m.step || 0) * 3 + (m.dive ? m.dive[0] * 4 : 0) + (m.slideV || 0) * 5 + (m.dashV || 0) * 7;
-  m.reach = m.projectile ? 400 : Math.max(0, L.x[JI[m.joint]]) + m.rad + 6 + travel;
+  let fx = L.x[JI[m.joint]];
+  if (m.wlen) {
+    // Weapon tip = hand + forearm direction * weapon length.
+    const dx = L.x[JI.h1] - L.x[JI.e1], dy = L.y[JI.h1] - L.y[JI.e1], n = Math.hypot(dx, dy) || 1;
+    fx = Math.max(fx, L.x[JI.h1] + (dx / n) * m.wlen);
+  }
+  m.reach = m.projectile ? (m.shoot ? 460 : 400) : Math.max(0, fx) + m.rad + 6 + travel;
 }
 const GROUND_MOVES = Object.keys(MOVES).filter((k) => !MOVES[k].air);
 

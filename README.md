@@ -36,6 +36,39 @@ A retro toolbox sits on the right edge of the screen. Hover a button to see its 
 - **Match:** pick FFA, Teams or Peace, then hit **Fight!** There are also Slow-mo and Pause switches.
 - **Settings:** fighter size, pixel size (Fine is high resolution, Classic and Chunky are blockier), the break between rounds, cinematic supers, showing detected window platforms, clearing drawings, resetting the AI's memory, updates, hiding the pets, and quitting.
 
+**Armory** (sword button): pick a weapon, item or power fruit, then click a fighter to hand it over, or click anywhere to drop it on the ground. Fighters also walk over and grab what they need on their own. **Item rain** drops 8 random things from the sky.
+
+| Weapons | What they do |
+|---|---|
+| Katana | Longer, harder slashes with sweeping trails; also slashes in the air |
+| Hammer | Slow overhead smash that cracks the ground and launches people |
+| Spear | Longest reach in the game, fast thrusts |
+| Blaster | Fires bullets from range |
+
+Weapons wear out (they break with a "BROKE!") and get knocked out of hands by big hits.
+
+| Items | |
+|---|---|
+| Medkit | Heals 45 |
+| Energy | Fills the super meter |
+| Grenade | Fighters lob it at enemies; explodes after a short fuse |
+
+**Power fruits** (Blox Fruits / anime inspired). Eat one to gain a destructive power; the AI casts it on cooldown and calls it out. A colored bar under a fighter's health shows when it's ready.
+
+| Power | Move |
+|---|---|
+| Flame | **Fire Fist**: a giant fireball that explodes and leaves the ground burning |
+| Ice | **Ice Age**: a wave of ice spikes that freezes enemies solid (hit them to shatter the ice) |
+| Light | **Light Speed**: teleports between up to 3 enemies, kicking each one |
+| Quake | **Seaquake**: punches the air so hard the screen cracks |
+| Dark | **Black Hole**: drags everyone in, then implodes |
+| Rumble | **El Thor**: a storm of lightning bolts on every enemy |
+| Gravity | **Meteor**: drops a meteor that leaves a crater |
+| Buddha | **Buddha**: grows into a golden giant for 8 seconds |
+| Ki Beam | **Kamehameha**: charges up and fires a beam across the whole screen |
+
+Powers leave marks: scorch marks, craters, shattered-glass cracks, ice spikes and burning ground. Explosions also break platforms you've drawn. Outside fights, pets with powers show off now and then (no damage, but the screen still gets wrecked). Powers are saved per fighter.
+
 **Hotkeys** (Ctrl is Cmd on macOS):
 
 | Keys | Action |
@@ -146,4 +179,5 @@ src/game/fighter.js State machine, movement, posing, verlet ragdoll
 src/game/ai.js      Fighting AI, learning, pet behaviors
 src/game/world.js   Platforms, hits, clashes, tools, team tactics, effects, rounds
 src/game/render.js  Canvas drawing
+src/game/arsenal.js Weapons, items, power fruits, destruction decals
 ```

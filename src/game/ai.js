@@ -157,6 +157,15 @@ function combatThink(f, w, inp, ai) {
     return;
   }
 
+  // Powers: cast when it is likely to land.
+  if (f.ability && f.abilityCD <= 0 && chance(0.05 + 0.04 * aggr)) {
+    const ab = ABILITIES[f.ability];
+    if (ab.ready(f, o, adx, dy, w)) { f.useAbility(o); return; }
+  }
+  if (f.grenades > 0 && adx > 120 * S && adx < 430 * S && chance(0.02)) { f.throwGrenade(o); return; }
+  // Go get gear when there's breathing room.
+  if (seekItem(f, w, inp, ai, adx > 140 * S || role === 'support')) return;
+
   // Whiff punish: the opponent is stuck in recovery.
   if (seen.state === 'attack' && seen.phase === 'recovery') {
     const m = MOVES[seen.move];
@@ -267,7 +276,7 @@ function chooseAttack(f, adx, seen, ai) {
   const blockRate = ai.oppBlock / ai.oppSeen;
   for (const key of GROUND_MOVES) {
     const m = MOVES[key];
-    if (m.projectile || m.superMove || (m.cost && f.meter < m.cost)) continue;
+    if (m.projectile || m.superMove || m.wpn || (m.cost && f.meter < m.cost)) continue;
     const reach = m.reach * S;
     if (adx > reach * 1.05) continue;
     let wgt = m.ai || 1;
@@ -278,6 +287,11 @@ function chooseAttack(f, adx, seen, ai) {
     if (key === 'slide' && adx < 40 * S) wgt *= 0.2;
     wgt *= (f.stats.w[key] == null ? 1 : f.stats.w[key]) * variety(ai, key);
     opts.push([key, wgt]);
+  }
+  if (f.weapon) {
+    // Armed fighters lean on their weapon.
+    const key = WEAPONS[f.weapon.kind].move, m = MOVES[key];
+    if (adx <= m.reach * S * 1.05 && (!m.shoot || Math.abs(seen.y - f.y) < 40 * S)) opts.push([key, (m.shoot ? 5 : 4) * variety(ai, key)]);
   }
   return weightedPick(opts);
 }
@@ -309,6 +323,7 @@ function bestPunish(f, adx, framesLeft) {
   for (const key of GROUND_MOVES) {
     const m = MOVES[key];
     if (m.projectile || m.grab || m.superMove || m.s >= framesLeft || adx > m.reach * f.S) continue;
+    if (m.wpn && !(f.weapon && WEAPONS[f.weapon.kind].move === key)) continue;
     const s = m.dmg * (f.stats.w[key] == null ? 1 : f.stats.w[key]) * rand(0.7, 1.3);
     if (s > score) { score = s; best = key; }
   }
@@ -363,8 +378,40 @@ function airThink(f, o, inp, ai, dir, w) {
   }
   if (ai.airPlan === 'airKick' && adx < 60 * S) { inp.attack = dy > 15 * S ? 'airKick' : 'tornado'; ai.airPlan = null; return; }
   if (adx < 32 * S && dy > 55 * S && dy < 200 * S && chance(0.15)) { inp.attack = 'pound'; return; }
-  if (adx < 48 * S && Math.abs(dy) < 35 * S && chance(0.25 + (ai.airChase > 0 ? 0.5 : 0))) inp.attack = chance(0.75) ? 'airPunch' : 'tornado';
+  const blade = f.weapon && WEAPONS[f.weapon.kind].move !== 'shoot';
+  if (adx < (blade ? 80 : 48) * S && Math.abs(dy) < 40 * S && chance(0.25 + (ai.airChase > 0 ? 0.5 : 0))) inp.attack = blade && chance(0.6) ? 'airslash' : chance(0.75) ? 'airPunch' : 'tornado';
   else if (adx < 75 * S && dy > 25 * S && dy < 120 * S && chance(0.12)) inp.attack = dy > 60 * S && adx < 35 * S ? 'airSpike' : 'airKick';
+}
+
+// How much a fighter wants an item right now (0 = not at all).
+function itemDesire(f, it) {
+  if (it.fuse || !wantsItem(f, it)) return 0;
+  if (WEAPONS[it.kind]) return 3;
+  if (ABILITIES[it.kind]) return 4;
+  if (it.kind === 'medkit') return f.hp < 70 ? 5 : 0.5;
+  if (it.kind === 'energy') return f.meter < 60 ? 2 : 0.3;
+  if (it.kind === 'grenade') return 1.5;
+  return 0;
+}
+
+// Head for the most wanted item in reach. Returns true while doing so.
+function seekItem(f, w, inp, ai, allowed) {
+  if (!allowed || !w.items.length || !ACTIONABLE.has(f.state)) return false;
+  const S = f.S;
+  let best = null, score = 0;
+  for (const it of w.items) {
+    const dx = Math.abs(it.x - f.x), dy = f.y - it.y;
+    if (dx > 420 * S || dy > 200 * S || dy < -260 * S) continue;
+    const s = itemDesire(f, it) / (1 + dx / (200 * S));
+    if (s > score) { score = s; best = it; }
+  }
+  if (!best || score < 0.4) return false;
+  const dx = best.x - f.x;
+  inp.face = sign(dx) || f.facing;
+  if (best.y < f.y - 30 * S && Math.abs(dx) < 70 * S) { inp.jump = true; inp.move = sign(dx); return true; }
+  if (best.y > f.y + 30 * S && f.plat && !f.plat.floor && Math.abs(dx) < 60 * S) { inp.drop = true; return true; }
+  if (Math.abs(dx) > 6 * S) { inp.move = sign(dx); inp.run = Math.abs(dx) > 120 * S; }
+  return true;
 }
 
 // Walk/jump/double-jump onto platform p (or drop down to it). Returns true while travelling.
@@ -437,6 +484,9 @@ function petThink(f, w, inp, ai) {
     return;
   }
 
+  if (f.onGround && seekItem(f, w, inp, ai, true)) return;
+  // Show off a power now and then (no damage outside fights, but the screen still gets wrecked).
+  if (f.ability && f.abilityCD <= 0 && f.onGround && ACTIONABLE.has(f.state) && chance(0.0015)) { f.useAbility(null); return; }
   if (!ai.pet || --ai.petT <= 0) choosePet(f, w, ai, cursorNear);
   switch (ai.pet) {
     case 'wander': {

@@ -81,7 +81,7 @@ function drawBody(ctx, P, S, front, back, outline, rim) {
 }
 
 function drawFighter(ctx, f, w) {
-  const S = w.S;
+  const S = f.S;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   // Afterimages in the element color.
@@ -112,6 +112,13 @@ function drawFighter(ctx, f, w) {
     ctx.globalAlpha = 1;
     return;
   }
+  if (f.giantT > 0 && !f.rag) {
+    // Buddha form: golden halo behind the body.
+    ctx.globalAlpha = 0.5 + 0.2 * Math.sin(w.tick * 0.3);
+    ctx.strokeStyle = '#ffd21a'; ctx.lineWidth = 4 * T;
+    ctx.beginPath(); ctx.arc(f.pts.head.x, f.pts.head.y, BODY.headR * f.S * 2.1, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = f.state === 'ko' ? 0.55 : 1;
+  }
   if (f.meter >= 100 && !f.rag) {
     // Full meter: pulsing elemental glow behind the body.
     ctx.globalAlpha = 0.45 + 0.25 * Math.sin(w.tick * 0.5 + f.id);
@@ -122,7 +129,9 @@ function drawFighter(ctx, f, w) {
     ctx.globalAlpha = f.state === 'ko' ? 0.55 : 1;
   }
   const flash = f.flash > 0;
-  drawBody(ctx, f.pts, S, flash ? '#ffffff' : f.color, flash ? '#dddddd' : f.dark, INK, f.rim);
+  drawBody(ctx, f.pts, f.S, flash ? '#ffffff' : f.color, flash ? '#dddddd' : f.dark, INK, f.rim);
+  drawWeapon(ctx, f, w);
+  if (f.state === 'frozen') drawIceBlock(ctx, f);
   if (f.state === 'ko') {
     // X eyes inside the ring.
     const h = f.pts.head, r = 2.6 * S;
@@ -149,7 +158,7 @@ function drawFighter(ctx, f, w) {
 }
 
 function drawHud(ctx, f, w, hover) {
-  const S = w.S, head = f.pts.head;
+  const S = f.S, head = f.pts.head;
   const showBars = w.inCombat || f.recentDmgT > 0 || w.phase === 'victory';
   let y = head.y - BODY.headR * S - 6 * T;
   if (showBars || hover) {
@@ -169,6 +178,14 @@ function drawHud(ctx, f, w, hover) {
       const full = f.meter >= 100;
       ctx.fillStyle = full ? (w.tick % 8 < 4 ? '#ffffff' : f.elc.main) : f.elc.dark;
       ctx.fillRect(x, y + bh + T, snap(bw * f.meter / 100), bh);
+      if (f.ability) {
+        // Power cooldown strip in the power's color; full = ready.
+        const ab = ABILITIES[f.ability], ready = f.abilityCD <= 0;
+        ctx.fillStyle = INK;
+        ctx.fillRect(x - T, y + 2 * bh + 2 * T, bw + 2 * T, bh + T);
+        ctx.fillStyle = ready ? (w.tick % 12 < 6 ? ab.color : ab.color2) : '#2a2a33';
+        ctx.fillRect(x, y + 2 * bh + 2 * T, snap(bw * (1 - Math.max(0, f.abilityCD) / ab.cd)), bh);
+      }
       y -= 3 * T;
     }
     // Names only on hover (or outside fights) to keep brawls readable.
@@ -343,6 +360,15 @@ function drawFx(ctx, w) {
         ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         break;
       }
+      case 'beamline':
+        ctx.globalAlpha = k;
+        ctx.lineCap = 'square';
+        for (const [wd, col] of [[14 * S * k + 2 * T, e.color], [4 * S * k + T, '#ffffff']]) {
+          ctx.strokeStyle = col; ctx.lineWidth = wd;
+          ctx.beginPath(); ctx.moveTo(e.x1, e.y1); ctx.lineTo(e.x2, e.y2); ctx.stroke();
+        }
+        ctx.lineCap = 'round';
+        break;
       case 'text': {
         ctx.globalAlpha = Math.min(1, k * 2.5);
         const size = e.size >= 20 ? 16 : 8;
@@ -359,6 +385,7 @@ function drawDecals(ctx, w) {
   ctx.lineCap = 'square';
   for (const d of w.decals) {
     const k = Math.min(1, d.life / 60);
+    if (d.kind) { drawDecal(ctx, d, k); ctx.lineCap = 'square'; continue; }
     for (const [width, color] of [[3 * T, 'rgba(255,255,255,0.5)'], [T, INK]]) {
       ctx.globalAlpha = k;
       ctx.strokeStyle = color;
@@ -373,6 +400,15 @@ function drawDecals(ctx, w) {
 function drawProjectiles(ctx, w) {
   const S = w.S;
   for (const p of w.projectiles) {
+    if (p.kind === 'bullet') {
+      ctx.lineCap = 'square';
+      ctx.strokeStyle = INK; ctx.lineWidth = 3 * T;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 1.6, p.y); ctx.stroke();
+      ctx.strokeStyle = '#ffe14d'; ctx.lineWidth = T;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 1.5, p.y); ctx.stroke();
+      ctx.lineCap = 'round';
+      continue;
+    }
     const E = p.owner.elc, el = p.owner.el, r = p.r;
     for (let i = 0; i < p.trail.length; i += 2) {
       const q = p.trail[i], k = i / p.trail.length;
@@ -443,6 +479,8 @@ function dirtyBox(w, scale) {
   for (const f of w.fighters) add(f.pts.hip.x, f.pts.hip.y, pad + 40);
   for (const e of w.fx) add(e.x != null ? e.x : (e.pts ? e.pts[0].x : 0), e.y != null ? e.y : (e.pts ? e.pts[0].y : 0), (e.r || 30) * 1.6 + 30);
   for (const p of w.projectiles) add(p.x, p.y, 60);
+  for (const it of w.items) add(it.x, it.y - 20, 50);
+  if (w.hazards.length) { add(0, 0, 0); add(w.width, w.height, 0); }
   if (w.banners.length) add(w.width / 2, Math.max(80, w.height * 0.22) + 40, Math.max(w.width / 2, 200));
   if (x0 === Infinity) return null;
   return [x0 * scale, y0 * scale, x1 * scale, y1 * scale];
@@ -482,8 +520,10 @@ function render(ctx, w, view) {
   }
 
   drawProjectiles(L, w);
+  drawItems(L, w);
   const order = w.fighters.slice().sort((a, b) => (b.state === 'ko') - (a.state === 'ko'));
   for (const f of order) drawFighter(L, f, w);
+  drawHazards(L, w);
   drawFx(L, w);
   for (const f of w.fighters) drawHud(L, f, w, f === view.hover);
 

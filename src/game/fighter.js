@@ -85,6 +85,9 @@ class Fighter {
     this.target = null; this.input = blankInput(); this.ai = null;
     this.trail = []; this.ghosts = []; this.hist = []; this.bubble = null; this.walkPh = 0;
     this.grabbed = null; this.grabber = null; this.lastHitBy = null; this.recentDmgT = 0;
+    // Arsenal: held weapon, eaten power, grenades, giant form, frozen timer.
+    this.weapon = null; this.ability = cfg.ability || null; this.abilityCD = 0; this.castAb = null; this.castTarget = null;
+    this.grenades = 0; this.giantT = 0; this.frozenT = 0;
     this.skeleton();
   }
 
@@ -133,6 +136,11 @@ class Fighter {
     this.recordHist();
     if (this.hitstop > 0) { this.hitstop--; this.skeleton(); return; }
     this.stateT++;
+    if (this.abilityCD > 0) this.abilityCD--;
+    if (this.giantT > 0) this.giantT--;
+    // Buddha form scales the whole fighter up.
+    const targetS = this.world.S * (this.giantT > 0 ? 1.75 : 1);
+    if (Math.abs(this.S - targetS) > 0.001) this.S = lerp(this.S, targetS, 0.1);
     if (this.invuln > 0) this.invuln--;
     if (this.flash > 0) this.flash--;
     if (this.dropT > 0) this.dropT--;
@@ -190,6 +198,18 @@ class Fighter {
         break;
       }
       case 'wall': this.wallControl(inp); break;
+      case 'cast': {
+        const ab = this.castAb;
+        this.vx *= 0.8;
+        if (this.stateT < ab.cast && ab.charge) ab.charge(this, this.world);
+        if (this.stateT === ab.cast) ab.fire.call(ab, this, this.world, this.castTarget);
+        if (this.stateT >= ab.cast + ab.after) { this.castAb = null; this.setState(this.onGround ? 'idle' : 'air'); }
+        break;
+      }
+      case 'frozen':
+        this.vx *= 0.85;
+        if (--this.frozenT <= 0) { shatterIce(this.world, this); this.setState(this.onGround ? 'idle' : 'air'); }
+        break;
       case 'grabbing':
         this.vx = 0;
         if (this.stateT === 22) this.throwVictim();
@@ -294,6 +314,10 @@ class Fighter {
   tryAttack(key) {
     const m = MOVES[key];
     if (!m) return false;
+    if (m.wpn) {
+      const W = this.weapon && WEAPONS[this.weapon.kind];
+      if (!W || (key === 'airslash' ? W.move === 'shoot' : W.move !== key)) return false;
+    }
     if (!!m.air === this.onGround) return false;
     if (m.cost && this.meter < m.cost) return false;
     if (m.air && this.airAttacks >= 2) return false;
@@ -338,6 +362,12 @@ class Fighter {
     if (m.slideV && active) this.vx = this.facing * m.slideV * S * (1 - (t - m.s) / (m.a + 6));
     if (m.superMove && active) this.vx = this.facing * 1.6 * S;
     if (m.dive && active) { this.vx = this.facing * m.dive[0] * S; this.vy = m.dive[1] * S; }
+    if (m.quake && t === m.s + 1 && this.onGround) {
+      // Hammer smash cracks the ground.
+      const tip = this.weaponTip() || this.pts.h1;
+      w.crack(tip.x, this.y, 0, 14); w.dust(tip.x, this.y, 8); w.shake = Math.max(w.shake, 9);
+      w.fx.push({ type: 'wave', x: tip.x, y: this.y, r: 60 * S, life: 14, max: 14, color: '#ffffff' });
+    }
     if (active && !m.projectile) {
       w.checkHit(this);
       if (this.move && this.ai && this.ai.angry > 0) w.checkCursorHit(this);
@@ -376,6 +406,56 @@ class Fighter {
   }
 
   startRoll(dir) { this.rollDir = dir; this.setState('roll', true); }
+
+  // ---- arsenal -----------------------------------------------------------
+  useAbility(target) {
+    const ab = ABILITIES[this.ability];
+    if (!ab || this.abilityCD > 0) return false;
+    this.castAb = ab;
+    this.castTarget = target || null;
+    this.abilityCD = ab.cd;
+    this.move = null;
+    if (target) this.facing = sign(target.x - this.x) || this.facing;
+    this.setState('cast', true);
+    const w = this.world;
+    w.text(this.pts.head.x, this.pts.head.y - 30 * this.S, ab.call, ab.color, 16);
+    w.ring(this.pts.neck.x, this.pts.neck.y, ab.color, 50 * w.S);
+    return true;
+  }
+
+  throwGrenade(target) {
+    if (!this.grenades) return false;
+    this.grenades--;
+    const w = this.world, S = w.S, g = GRAV * S, T = 42;
+    this.facing = sign(target.x - this.x) || this.facing;
+    const h = this.pts.h1;
+    const dx = target.x - h.x, dy = target.y - 10 * S - h.y;
+    spawnItem(w, 'grenade', h.x, h.y, { vx: dx / T, vy: (dy - 0.5 * g * T * T) / T, fuse: 70, thrower: this });
+    this.castAb = { cast: 1, after: 12, pose: POSES.throwPose, fire() {} };
+    this.setState('cast', true);
+    return true;
+  }
+
+  weaponTip() {
+    if (!this.weapon) return null;
+    const W = WEAPONS[this.weapon.kind], h = this.pts.h1, e = this.pts.e1;
+    const dx = h.x - e.x, dy = h.y - e.y, n = Math.hypot(dx, dy) || 1;
+    return { x: h.x + (dx / n) * W.len * this.S, y: h.y + (dy / n) * W.len * this.S };
+  }
+
+  dropWeapon(vx = 0, vy = -4) {
+    if (!this.weapon) return;
+    const h = this.pts.h1;
+    spawnItem(this.world, this.weapon.kind, h.x, h.y, { vx, vy: vy * this.world.S, uses: this.weapon.uses });
+    this.weapon = null;
+  }
+
+  breakWeapon() {
+    const w = this.world, tip = this.weaponTip() || this.pts.h1;
+    for (let i = 0; i < 10; i++) w.fx.push({ type: 'sq', x: tip.x, y: tip.y, vx: rand(-4, 4) * w.S, vy: rand(-5, 1) * w.S, size: 4 * w.S, life: 22, max: 22, color: '#dfe6ee' });
+    w.text(tip.x, tip.y - 14 * w.S, 'BROKE!', '#dfe6ee', 8);
+    this.weapon = null;
+  }
 
   startDash(dir) {
     this.dashDir = dir;
@@ -529,6 +609,13 @@ class Fighter {
         rate = this.adT > 0 ? 0.5 : 0.18;
         break;
       case 'wall': target = POSES.wall; rate = 0.4; break;
+      case 'cast': {
+        const ab = this.castAb;
+        target = this.stateT < ab.cast ? ab.pose : (ab.pose2 || ab.pose);
+        rate = 0.35;
+        break;
+      }
+      case 'frozen': target = this.pose; rate = 0; break;
       case 'backflip': target = POSES.jump; rate = 0.4; break;
       case 'land': target = POSES.land; rate = 0.5; break;
       case 'roll': target = POSES.roll; rate = 0.5; break;
@@ -593,7 +680,8 @@ class Fighter {
     const m = this.move;
     if (this.state === 'attack' && m && m.joint && !m.projectile && this.moveT >= m.hits[0][0] - 2 && this.phase() !== 'recovery') {
       const p = this.hitWin >= 0 ? this.hitProps() : m;
-      const j = this.pts[p.joint];
+      const armed = this.weapon && WEAPONS[this.weapon.kind].len > 20 && (p.joint === 'h1' || p.wpn);
+      const j = armed ? this.weaponTip() : this.pts[p.joint];
       this.trail.push({ x: j.x, y: j.y });
       if (this.trail.length > 8) this.trail.shift();
     } else if (this.trail.length) this.trail.shift();
@@ -658,6 +746,9 @@ class Fighter {
     }
     if (this.grabbed) { const v = this.grabbed; this.grabbed = null; v.grabber = null; }
     if (this.grabber) { this.grabber.grabbed = null; this.grabber = null; }
+    // Big hits can knock the weapon out of your hand; a K.O. always does.
+    if (this.weapon && state !== 'held' && (state === 'ko' || chance(0.3))) this.dropWeapon(vx * 0.5, -6);
+    this.castAb = null; this.frozenT = 0;
     this.rag = { p, cons, t: 0, still: 0, slamT: 0, pin: -1, thrower: null, hitSet: new Set() };
     this.move = null; this.onGround = false; this.plat = null;
     this.rot = 0; this.flip = 0; this.hitstun = 0; this.juggled = false; this.adT = 0;

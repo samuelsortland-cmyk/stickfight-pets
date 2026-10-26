@@ -29,7 +29,7 @@
     world, settings, api, view, tool: 'hand', paused: false, spawnName: null, spawnArch: '',
     save() { try { localStorage.setItem('stickfight.settings', JSON.stringify(settings)); } catch (e) { /* ignore */ } },
     saveRoster() {
-      settings.roster = world.fighters.map((f) => ({ name: f.name, arch: f.archName }));
+      settings.roster = world.fighters.map((f) => ({ name: f.name, arch: f.archName, ability: f.ability || null }));
       app.save();
     },
     toast(msg) {
@@ -42,8 +42,10 @@
       app.tool = view.tool = t;
       canvas.classList.toggle('tool', t !== 'hand');
       world.drawing = null;
-      const names = { pencil: 'Pencil', eraser: 'Eraser', bomb: 'Bomb', smite: 'Lightning', spawn: 'Spawn' };
+      const itemName = (k) => WEAPONS[k] ? WEAPONS[k].name : ABILITIES[k] ? ABILITIES[k].name + ' fruit' : CONSUMABLES[k] ? CONSUMABLES[k].name : '';
+      const names = { pencil: 'Pencil', eraser: 'Eraser', bomb: 'Bomb', smite: 'Lightning', spawn: 'Spawn', item: itemName(app.itemKind) };
       hintEl.innerHTML = t === 'hand' ? '' : `<b>${names[t]}</b> &nbsp;${TOOL_DESC[t]} &nbsp;<b>Esc</b> to stop`;
+      if (t !== 'item' && app.onItemToolEnd) app.onItemToolEnd();
       hintEl.style.display = t === 'hand' ? 'none' : 'block';
       if (api) api.setToolMode(t !== 'hand');
       if (app.onToolChange) app.onToolChange(t);
@@ -61,7 +63,7 @@
   fitCanvas();
 
   if (settings.roster && settings.roster.length) {
-    for (const r of settings.roster) world.addFighter({ name: r.name, arch: r.arch });
+    for (const r of settings.roster) world.addFighter({ name: r.name, arch: r.arch, ability: r.ability });
   } else {
     world.addFighter(); world.addFighter();
   }
@@ -175,6 +177,15 @@
       case 'eraser': erasing = true; world.eraseAt(x, y); return;
       case 'bomb': world.explode(x, y); return;
       case 'smite': world.smite(x, y); return;
+      case 'item': {
+        if (!app.itemKind) return;
+        const target = world.fighterAt(x, y, 18);
+        if (target) {
+          giveItem(world, target, app.itemKind);
+          if (ABILITIES[app.itemKind]) app.saveRoster();
+        } else spawnItem(world, app.itemKind, x, y);
+        return;
+      }
       case 'spawn': {
         const nf = world.addFighter({ name: app.spawnName, arch: app.spawnArch, x, y });
         if (nf) { app.saveRoster(); app.spawnName = null; } else app.toast("That's everyone (12 max)!");

@@ -1,6 +1,6 @@
 {
-  "version": "2.1.2",
-  "notes": "Higher-resolution stickmen, pixel size setting, fix the tucked-away tab not opening",
+  "version": "2.2.0",
+  "notes": "Armory: weapons, items and 9 destructive power fruits",
   "files": [
     {
       "path": "main.js",
@@ -16,15 +16,15 @@
     },
     {
       "path": "package.json",
-      "sha256": "c2ee7ba4869ac261f85041daa11622010d4159c0d4f27dc578efc49a391b8c5a"
+      "sha256": "e345a6d00c2b36e11ae76bd2640fa1d0dc86e4305437aeabb43215722cce9eb4"
     },
     {
       "path": "README.md",
-      "sha256": "3997f40cec78f50c0746f7437966b8daaccc6dfffa0948f51210ef06d9716c8f"
+      "sha256": "1421878027b263008ab858b6e2116de3a089235d30e0f6553dc7518503dec77e"
     },
     {
       "path": "FIGHTING_DESIGN.md",
-      "sha256": "73acfdc407e8fd5b1f28e706dd09671a9ed757d23f8cd3dfd651bb3c9b899e16"
+      "sha256": "16ab643699befd9dcad9d7b4bdbcf95760afe659076ea05154e1e2aa97c6edbf"
     },
     {
       "path": "Start StickFight.bat",
@@ -32,19 +32,23 @@
     },
     {
       "path": "src/app.js",
-      "sha256": "e1915035c1510744f8c695ae1703be259fc1b7628702b10a3ecd561531a45450"
+      "sha256": "b4b66613e1227f1dfdc91a8e58f12d7302ceff3cd93e4067422d51e1d73ac5ad"
     },
     {
       "path": "src/game/ai.js",
-      "sha256": "0a64cbaeabd24a7ca124015a9e82b1bc55ce26400b41eeb82e365e03a3cd930b"
+      "sha256": "59c039be29f632ee0c6a10747e3d8c206c69d6537a5513d232cf64d9d531572b"
+    },
+    {
+      "path": "src/game/arsenal.js",
+      "sha256": "25142fdf25b2284fb3fd19dac6ad4ebeab7e187d76b4275336707a35d375b3f9"
     },
     {
       "path": "src/game/fighter.js",
-      "sha256": "f78689d7801089b75c89e1ce6fa1c0686780ce8cda7adacefdbab1ec42e0636c"
+      "sha256": "1d78ec83ba8defbc62ce965d269286e90fa2a02915c25a32d3e705a403fe0d4a"
     },
     {
       "path": "src/game/moves.js",
-      "sha256": "4a86c4c63e6abdce2c53a3bff667f696a889e42cc7bb2cee8052f6d82e4845c5"
+      "sha256": "e1e8a7a6db940a8b690a38ada7c898f31f5daf075df97283b28faff25d1f29bf"
     },
     {
       "path": "src/game/poses.js",
@@ -52,19 +56,19 @@
     },
     {
       "path": "src/game/render.js",
-      "sha256": "439689d149ab858a58ee78b533b9ff92e2746452b57346f3c2a5623b0fb9546e"
+      "sha256": "35a0910c17b3ab2839035eb0015cc37e3aa9eff6ab4332f07cbdb09faba243af"
     },
     {
       "path": "src/game/world.js",
-      "sha256": "65fcf064288f4d9f77369fd37844a9df88119811671cfdef86bb2a921b7114b3"
+      "sha256": "9b4aff00262d62fd1c8517e18ed45ae6adc85a22d922b8787bdd6cda04fac0db"
     },
     {
       "path": "src/index.html",
-      "sha256": "da110d79807640a1d3439879fa21a711034d5588fe1ee2fcfe6db3f22b35efb6"
+      "sha256": "a427cd7a17fcc17ba36ef26f752bce1fba0307de962d8ed71a6fec36327b13ec"
     },
     {
       "path": "src/ui.js",
-      "sha256": "1ded015d67bd671f27f94c9227cc7133e41761071ec6f4c90bcf086b0836b36d"
+      "sha256": "91698b8f7fadb3c705ec38fea4fdd9841723185db6a79752575a441845f4c4bb"
     },
     {
       "path": "src/windows.js",
